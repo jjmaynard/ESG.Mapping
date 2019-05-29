@@ -1,0 +1,19 @@
+name: "Ecological Site Mapping"
+output_dir: ../docs
+navbar:
+  title: "Ecological Site Mapping"
+  left:
+  - text: Overview
+    href: index.html
+  - text: Code
+    href: about.html
+  - text: Data
+    href: data.html
+  - text: License
+    href: license.html
+output:
+  workflowr::wflow_html:
+    toc: yes
+    toc_float: yes
+    theme: cosmo
+    highlight: textmate
