@@ -1,6 +1,6 @@
 ---
-title: "data"
-author: "Jon Maynard"
+title: "Data"
+author: "Jonathan Maynard"
 date: "May 28, 2019"
 output: html_document
 ---
