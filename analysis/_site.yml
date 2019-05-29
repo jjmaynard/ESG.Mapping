@@ -12,7 +12,8 @@ navbar:
   - text: License
     href: license.html
   right:
-  - icon: fa-github
+  - text: Source Code
+    icon: fa-github
     href: https://github.com/jjmaynard/ESG.Mapping
 output:
   workflowr::wflow_html:
