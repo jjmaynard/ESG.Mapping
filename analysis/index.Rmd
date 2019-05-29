@@ -24,11 +24,12 @@ Sandy ESG near Las Cruces, NM (Summerford Mountain in background) -- March 22, 2
 <br>
 <br>
 
-Ecological site descriptions (ESDs) and associated state-and-transition models (STMs) provide a nationally consistent classification and information system for defining ecological land units for management applications in the U.S. Current spatial representations of ESDs, however, occur via soil mapping and are therefore confined to the spatial resolution used to map soils within a survey area.  Land management decisions occur across a range of spatial scales and therefore require ecological information that spans similar scales. Digital mapping provides an approach for optimizing the spatial scale of modeling products to best serve decision makers and have the greatest impact in addressing land management concerns. 
-<br>
-THis 
+####Ecological site descriptions (ESDs) and associated state-and-transition models (STMs) provide a nationally consistent classification and information system for defining ecological land units for management applications in the US. Current spatial representations of ESDs, however, occur via soil mapping and are therefore confined to the spatial resolution used to map soils within a survey area.  Land management decisions occur across a range of spatial scales and therefore require ecological information that spans similar scales. Digital mapping provides an approach for optimizing the spatial scale of modeling products to best serve decision makers and have the greatest impact in addressing land management concerns. 
 
-This website describes the data and code for the paper:
+<br>
+ 
+
+####This website describes the data and code for the paper:
 
 > Maynard, J.J., T.W. Nauman, S.W. Salley, B.T. Bestelmeyer, M.C. Duniway, C.J. Talbot, and J.R. Brown, (2019). _`r Title`_. Soil Science Society of America Journal <https://doi.org/doi:10.2136/sssaj2018.10.0346>
 
@@ -40,4 +41,50 @@ Please cite this compendium as:
 >  Maynard, J.J., T.W. Nauman, S.W. Salley, B.T. Bestelmeyer, M.C. Duniway, C.J. Talbot, and J.R. Brown, (`r format(Sys.Date(), "%Y")`). _Compendium of R code and data for `r Title`_. Accessed `r format(Sys.Date(), "%d %b %Y")`. Online at <https://doi.org/doi:10.2136/sssaj2018.10.0346>
 
 
-Here we present a spatial modeling framework for mapping ecological sites using machine learning algorithms, soil survey field observations, soil survey geographic databases, ecological site data, and a suite of remote sensing-based spatial covariates (e.g., hyper-temporal remote sensing, terrain attributes, climate data, land-cover, lithology). Based upon the theoretical association between ecological sites and landscape biophysical properties, we hypothesized that the spatial distribution of ecological sites could be predicted using readily available geospatial data. This modeling approach was tested at two study areas within the western U.S., representing 6.1 million ha on the Colorado Plateau and 7.5 million ha within the Chihuahuan Desert. Results show our approach was effective in mapping grouped ecological site classes (ESGs), with 10-fold cross-validation accuracies of 70% in the Colorado Plateau based on 1,405 point observations across 8 expertly-defined ESG classes and 79% in the Chihuahuan Desert based on 2,589 point observations across 9 expertly-defined ESG classes. Model accuracies were also evaluated using external-validation datasets; resulting in 56% and 44% correct classification for the Colorado Plateau and Chihuahuan Desert, respectively. National coverage of the training and covariate data used in this study provides opportunities for a consistent national-scale mapping effort of ecological sites. 
+####This research compendium describes the spatial modeling framework, R code, and data used to create digital maps of ecological sites in two study areas within the western U.S., representing 6.1 million ha on the Colorado Plateau and 7.5 million ha within the Chihuahuan Desert.
+<br>
+
+```{r include=FALSE}
+
+library(mapview)
+library(leaflet)
+library(leafsync)
+library(dplyr)
+library(sf)
+library(here)
+
+NM_bound <- st_read(here("data", "derived_data", "vector", "Chihauhuan_Study_Area_Boundary.shp"))
+CO_bound <- st_read(here("data", "derived_data", "vector", "epaL4_mlra35sel_bndc.shp"))
+NM_points <- st_read(here("data", "derived_data", "vector", "NM_points_final.shp"))
+CO_points <- st_read(here("data", "derived_data", "vector", "CO_points_final.shp"))
+NM_val_points <- st_read(here("data", "derived_data", "vector", "NM_ext_valid_points.shp"))
+CO_val_points <- st_read(here("data", "derived_data", "vector", "CO_ext_valid_points.shp"))
+
+NM_val_points <- NM_val_points %>% mutate(ExtVal = Group*0)
+CO_bound <- CO_bound %>% mutate(STATE_ABBR = 'Study Boundary')
+NM_bound <- NM_bound %>% mutate(STATE_ABBR = 'Study Boundary')
+```
+
+```{r echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+nm <- mapview(NM_points, zcol = "X2016_E", map.types=c("Esri.WorldImagery", "OpenTopoMap"), layer.name = 'ESG') +
+mapview(NM_val_points, zcol = NULL, col.regions="red", map.types=c("Esri.WorldImagery", "OpenTopoMap"), layer.name = 'External Validation Points') +
+mapview(NM_bound, zcol = "STATE_ABBR", map.types=c("Esri.WorldImagery", "OpenTopoMap"), alpha.regions=0.2, layer.name = 'Chihuahuan Desert') 
+co <- mapview(CO_points, zcol = "ESG_Name", map.types=c("Esri.WorldImagery", "OpenTopoMap"), layer.name = 'ESG') +
+mapview(CO_val_points, zcol = NULL, col.regions="red", map.types=c("Esri.WorldImagery", "OpenTopoMap"), layer.name = 'External Validation Points') +
+mapview(CO_bound, zcol = "STATE_ABBR", map.types=c("Esri.WorldImagery", "OpenTopoMap"), alpha.regions=0.2, layer.name = 'Colorado Plateau') 
+leafsync::latticeView(c(nm, co), ncol = 1)
+```
+<br>
+
+
+<br>
+![Ecological site modelling framework](ESG_Modeling_Framework.png) 
+<br>
+Modeling framework for the spatial prediction of ecological land units.
+<br>
+<br>
+
+
+using machine learning algorithms, soil survey field observations, soil survey geographic databases, ecological site data, and a suite of remote sensing-based spatial covariates (e.g., hyper-temporal remote sensing, terrain attributes, climate data, land-cover, lithology). Based upon the theoretical association between ecological sites and landscape biophysical properties, we hypothesized that the spatial distribution of ecological sites could be predicted using readily available geospatial data. This modeling approach was tested at 
+
+Results show our approach was effective in mapping grouped ecological site classes (ESGs), with 10-fold cross-validation accuracies of 70% in the Colorado Plateau based on 1,405 point observations across 8 expertly-defined ESG classes and 79% in the Chihuahuan Desert based on 2,589 point observations across 9 expertly-defined ESG classes. Model accuracies were also evaluated using external-validation datasets; resulting in 56% and 44% correct classification for the Colorado Plateau and Chihuahuan Desert, respectively. National coverage of the training and covariate data used in this study provides opportunities for a consistent national-scale mapping effort of ecological sites. 
