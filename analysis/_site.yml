@@ -12,7 +12,7 @@ navbar:
   - text: License
     href: license.html
   right:
-  - text: Source Code
+  - text: Git Repository
     icon: fa-github
     href: https://github.com/jjmaynard/ESG.Mapping
 output:
