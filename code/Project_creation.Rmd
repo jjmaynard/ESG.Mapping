@@ -46,7 +46,9 @@ rrtools::use_travis()
 wflow_start("ESG.Mapping_site", git = FALSE)
 wflow_build() #to build  website
 wflow_view()  #view website
-wflow_publish(c("analysis/index.Rmd", "analysis/about.Rmd", "analysis/license.Rmd"), "Publish the initial files for myproject")
+#rename "analysis/about.Rmd" to "analysis/code.Rmd"
+#create new Rmarkdown file "analysis/data.Rmd"
+wflow_publish(c("analysis/index.Rmd", "analysis/code.Rmd", "analysis/data.Rmd", "analysis/license.Rmd"), "Publish the initial files for myproject")
 wflow_status() #to check if docs have been published
 
 #Integreate rrtools folder and workflow folder: 
