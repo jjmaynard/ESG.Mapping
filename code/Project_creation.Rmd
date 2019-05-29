@@ -58,8 +58,35 @@ wflow_status() #to check if docs have been published
   #move README.md in /output folder to data/derived/ and erase /output
 
 #Move items from "ESG.Mapping_site" to "ESG.Mapping". Erase "ESG.Mapping_site" folder
-#Commit changes with Git and push to GitHub. All future changes can be pushed to
+#Commit changes with Git and push to GitHub.
 
+```
+
+
+##Examples for making changes to project website with workflowr
+```{r}
+#Check if any docs have not yet been published
+wflow_status() 
+# single file
+wflow_publish("analysis/file.Rmd", "Informative commit message")
+# All tracked files that have been edited
+wflow_publish(all = TRUE, message = "Informative commit message")
+# A new file plus all tracked files that have been edited
+wflow_publish("analysis/file.Rmd", "Informative commit message", all = TRUE)
+# Multiple files
+wflow_publish(c("analysis/file.Rmd", "analysis/another.Rmd"),
+              "Informative commit message")
+# All R Markdown files that start with the pattern "new_"
+wflow_publish("analysis/new_*Rmd", "Informative commit message")
+# Republish all published files even though they haven't been modified.
+# Useful for changing some universal aspect of the site, e.g. the theme
+# specified in _site.yml.
+wflow_publish("analysis/_site.yml", "Informative commit message",
+              republish = TRUE)
+# Publish all previously published files that have been committed more
+# recently than their corresponding HTML files. This is useful if you like to
+# manually commit your R Markdown files.
+wflow_publish(update = TRUE)
 
 ```
 
