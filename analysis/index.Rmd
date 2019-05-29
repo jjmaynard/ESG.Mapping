@@ -17,24 +17,22 @@ Title <- "Digital Mapping of Ecological Land Units using a Nationally Scalable M
 ```
 
 <br>
-![Sandy ESG near Las Cruces, NM (Summerford Mountain in background) -- March 22, 2019. Photo credit: Shawn Salley](esg1.png) <br>
 
+![](esg1.png)
 
-Sandy ESG near Las Cruces, NM (Summerford Mountain in background) -- March 22, 2019. Photo credit: Shawn Salley.
-<br>
+######**Sandy ESG near Las Cruces, NM (Summerford Mountain in background) -- March 22, 2019. Photo credit: Shawn Salley**
+
 <br>
 
 ####Ecological site descriptions (ESDs) and associated state-and-transition models (STMs) provide a nationally consistent classification and information system for defining ecological land units for management applications in the US. Current spatial representations of ESDs, however, occur via soil mapping and are therefore confined to the spatial resolution used to map soils within a survey area.  Land management decisions occur across a range of spatial scales and therefore require ecological information that spans similar scales. Digital mapping provides an approach for optimizing the spatial scale of modeling products to best serve decision makers and have the greatest impact in addressing land management concerns. 
 
-<br>
- 
 
-####This website describes the data and code for the paper:
+####This website describes the data and code used in the paper:
 
 > Maynard, J.J., T.W. Nauman, S.W. Salley, B.T. Bestelmeyer, M.C. Duniway, C.J. Talbot, and J.R. Brown, (2019). _`r Title`_. Soil Science Society of America Journal <https://doi.org/doi:10.2136/sssaj2018.10.0346>
 
 
-### How to cite
+#### How to cite
 
 Please cite this compendium as:
 
@@ -72,19 +70,31 @@ mapview(NM_bound, zcol = "STATE_ABBR", map.types=c("Esri.WorldImagery", "OpenTop
 co <- mapview(CO_points, zcol = "ESG_Name", map.types=c("Esri.WorldImagery", "OpenTopoMap"), layer.name = 'ESG') +
 mapview(CO_val_points, zcol = NULL, col.regions="red", map.types=c("Esri.WorldImagery", "OpenTopoMap"), layer.name = 'External Validation Points') +
 mapview(CO_bound, zcol = "STATE_ABBR", map.types=c("Esri.WorldImagery", "OpenTopoMap"), alpha.regions=0.2, layer.name = 'Colorado Plateau') 
-leafsync::latticeView(c(nm, co), ncol = 1)
+leafsync::latticeView(c(co, nm), ncol = 1)
+
 ```
-<br>
-
 
 <br>
-![Ecological site modelling framework](ESG_Modeling_Framework.png) 
-<br>
-Modeling framework for the spatial prediction of ecological land units.
-<br>
+
 <br>
 
+<br>
 
-using machine learning algorithms, soil survey field observations, soil survey geographic databases, ecological site data, and a suite of remote sensing-based spatial covariates (e.g., hyper-temporal remote sensing, terrain attributes, climate data, land-cover, lithology). Based upon the theoretical association between ecological sites and landscape biophysical properties, we hypothesized that the spatial distribution of ecological sites could be predicted using readily available geospatial data. This modeling approach was tested at 
+####Our modeling framework employs machine learning algorithms, soil survey field observations, soil survey geographic databases, ecological site data, and a suite of remote sensing-based spatial covariates (e.g., hyper-temporal remote sensing, terrain attributes, climate data, land-cover, lithology) to generate probability-based spatail predictions of ecological site groups.
 
-Results show our approach was effective in mapping grouped ecological site classes (ESGs), with 10-fold cross-validation accuracies of 70% in the Colorado Plateau based on 1,405 point observations across 8 expertly-defined ESG classes and 79% in the Chihuahuan Desert based on 2,589 point observations across 9 expertly-defined ESG classes. Model accuracies were also evaluated using external-validation datasets; resulting in 56% and 44% correct classification for the Colorado Plateau and Chihuahuan Desert, respectively. National coverage of the training and covariate data used in this study provides opportunities for a consistent national-scale mapping effort of ecological sites. 
+<br>
+![](ESG_Modeling_Framework.png) 
+
+######**Modeling framework for the spatial prediction of ecological land units.**
+
+<br>
+
+####The ecological site modeling framework shown above consists of five steps: 
+    1. Develop an ESG point dataset for training and cross-validation 
+    2. Preprocess ESG covariates for tiling and point overlay
+    3. Covariate feature selection and model development
+    4. Spatial predictions using tiled raster stacks
+    5. Model validation and uncertainty analysis 
+
+
+####All modeling steps outlined above were implemented using Open-Source software, including: SAGA GIS, GDAL, and R.
