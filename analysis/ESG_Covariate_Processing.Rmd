@@ -5,7 +5,7 @@ date: "Feb 10, 2017"
 output: html_document
 ---
 
-# Overview
+## Overview
 #### This script downloads and processes a wide range of spatial covariate layers
 ```{r eval=FALSE}
 required.packages <- c("here", "MODIS", "maptools", "rgdal", "raster", "maps", "lubridate", "sp", "gdalUtils", "prodlim", "Cairo", "lattice", "zoo", "rgeos", "shapefiles", "spatial.tools", "ggplot2", "rasterVis", "stringdist", "data.table", "fastmatch", "pROC", "parallel", "foreach", "plyr", "snowfall", "imputeTS", "signal", "dummies", "gtools", "doParallel")
@@ -22,7 +22,8 @@ getDoParWorkers()
 ```
 
 
-## Load in NASIS ecological site point data
+## NASIS ES Point Data
+####Load in NASIS ecological site point data
 ```{r eval=FALSE}
 #Study areas
 CO <- readOGR(dsn="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area",layer="epaL4_mlra35sel_bndc")
@@ -340,7 +341,7 @@ nm.bio.stack <- stack(paste0(nm.output_folder, "/", mixedsort(list.files(nm.outp
 
 ```
 
-### GAMMA data
+### GAMMA Data
 ```{r eval=FALSE}
 #paths to GAMMA data
 NAMrad_exp <- "/data/data2/data/GAMMA_DATA/NAMrad_exp/NAMrad_exp.flt"
@@ -593,7 +594,7 @@ writeRaster(soil.grids.nm.proj.stack, filename = var.name, bylayer=T, format="GT
 #-----------------------------------------------------------------------------------------------------------
 ```
 
-### GEE Monthly RS rasters
+### GEE Monthly RS Rasters
 ```{r eval=FALSE}
 path.gee <- "/data/data2/data/ESG_GEE"
 
@@ -758,7 +759,7 @@ setwd("/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/
 writeRaster(nm_landcover_raster.layer, filename = names(nm_landcover_raster.layer), bylayer=T, format="GTiff", overwrite=T)
 ```
 
-### Hyper-temporal imagery
+### Hyper-temporal Imagery
 ```{r eval=FALSE}
 CO_infill.ndvi <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_NDVI_infill.tif")
 CO_infill.evi <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_EVI_infill.tif")
@@ -830,7 +831,7 @@ co.hyper <- preStack(path = co.hyper.path, pattern = ".*.tif")
 nm.hyper <- preStack(path = nm.hyper.path, pattern = ".*.tif")
 ```
 
-## Align Raster Covariate Extents
+## Align Raster Extents
 ```{r eval=FALSE}
 #-------------------Functions for aligning extent, infilling and masking
 #Function to crop list of raster layers to common extent
