@@ -79,7 +79,8 @@ leafsync::latticeView(c(co, nm), ncol = 1)
 <br>
 
 <br>
-
+                          
+                              
 ####Our modeling framework employs machine learning algorithms, soil survey field observations, soil survey geographic databases, ecological site data, and a suite of remote sensing-based spatial covariates (e.g., hyper-temporal remote sensing, terrain attributes, climate data, land-cover, lithology) to generate probability-based spatail predictions of ecological site groups.
 
 <br>

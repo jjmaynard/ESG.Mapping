@@ -1139,15 +1139,15 @@ writeOGR(nm.spatial.validation.points.cov , dsn="/data/data2/data/esgMapping/ana
 ```
 
 ```{r eval=FALSE}
-#-------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------
 #Output data for modeling steps
 save(co.points.covariates,co.spatial.points.cov, co.validation.points.covariates, co.spatial.validation.points.cov, co.covariates.stack, file = "/data/data2/data/esgMapping/R/CO_ESG_modeling_data.Rdata")
 
 save(nm.points.covariates,nm.spatial.points.cov, nm.validation.points.covariates.narm, nm.spatial.validation.points.cov, nm.covariates.stack, file = "/data/data2/data/esgMapping/R/NM_ESG_modeling_data.Rdata")
 
-###############################################################################################################
+#------------------------------------------------------------------------------------------------
 save.image("/data/data2/data/esgMapping/R/CO_NM_Ecosite_covariate_process.RData")
 load("/data/data2/data/esgMapping/R/CO_NM_Ecosite_covariate_process.RData")
-###############################################################################################################
+#------------------------------------------------------------------------------------------------
 ```
 

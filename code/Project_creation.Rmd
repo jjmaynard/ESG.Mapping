@@ -90,5 +90,7 @@ wflow_publish("analysis/_site.yml", "Informative commit message",
 # manually commit your R Markdown files.
 wflow_publish(update = TRUE)
 
+wflow_publish("analysis/index.Rmd", all = TRUE, message = "Update index")
+
 ```
 
