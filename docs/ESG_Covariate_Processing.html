@@ -540,10 +540,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree49eb6ccf4d057ff4ba272203e377bd1a32160ab8targetblank49eb6cca"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/49eb6ccf4d057ff4ba272203e377bd1a32160ab8" target="_blank">49eb6cc</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreeffcdf0a2fbeeb369ae9bea43d572f4ff5b5b4354targetblankffcdf0aa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/ffcdf0a2fbeeb369ae9bea43d572f4ff5b5b4354" target="_blank">ffcdf0a</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree49eb6ccf4d057ff4ba272203e377bd1a32160ab8targetblank49eb6cca" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreeffcdf0a2fbeeb369ae9bea43d572f4ff5b5b4354targetblankffcdf0aa" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -595,6 +595,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/jjmaynard/ESG.Mapping/blob/ffcdf0a2fbeeb369ae9bea43d572f4ff5b5b4354/analysis/ESG_Covariate_Processing.Rmd" target="_blank">ffcdf0a</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-05-30
+</td>
+<td>
+Build ESG covariate processing
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/jjmaynard/ESG.Mapping/39346bdaf81d4d1a3f9982873c1d8fc4a66e9843/docs/ESG_Covariate_Processing.html" target="_blank">39346bd</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-05-30
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -653,8 +687,10 @@ Build ESG covariate processing
 </div>
 </div>
 </div>
-<div id="this-script-downloads-and-processes-a-wide-range-of-spatial-covariate-layers" class="section level2">
-<h2>This script downloads and processes a wide range of spatial covariate layers</h2>
+<div id="overview" class="section level1">
+<h1>Overview</h1>
+<div id="this-script-downloads-and-processes-a-wide-range-of-spatial-covariate-layers" class="section level4">
+<h4>This script downloads and processes a wide range of spatial covariate layers</h4>
 <pre class="r"><code>required.packages &lt;- c(&quot;here&quot;, &quot;MODIS&quot;, &quot;maptools&quot;, &quot;rgdal&quot;, &quot;raster&quot;, &quot;maps&quot;, &quot;lubridate&quot;, &quot;sp&quot;, &quot;gdalUtils&quot;, &quot;prodlim&quot;, &quot;Cairo&quot;, &quot;lattice&quot;, &quot;zoo&quot;, &quot;rgeos&quot;, &quot;shapefiles&quot;, &quot;spatial.tools&quot;, &quot;ggplot2&quot;, &quot;rasterVis&quot;, &quot;stringdist&quot;, &quot;data.table&quot;, &quot;fastmatch&quot;, &quot;pROC&quot;, &quot;parallel&quot;, &quot;foreach&quot;, &quot;plyr&quot;, &quot;snowfall&quot;, &quot;imputeTS&quot;, &quot;signal&quot;, &quot;dummies&quot;, &quot;gtools&quot;, &quot;doParallel&quot;)
 new.packages &lt;- required.packages[!(required.packages %in% installed.packages()[,&quot;Package&quot;])]
 if(length(new.packages)) install.packages(new.packages)
@@ -749,8 +785,10 @@ nm.site_id &lt;- data.frame(seq(1,nrow(nm.points),1), nm.points$ESG_ID)
 names(nm.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
 #---------------------------------------------------------------------------------------------------------------------</code></pre>
 </div>
-<div id="process-terrain-data" class="section level2">
-<h2>Process terrain data</h2>
+<div id="process-covariate-data" class="section level2">
+<h2>Process Covariate Data</h2>
+<div id="terrain-data" class="section level3">
+<h3>Terrain Data</h3>
 <pre class="r"><code>#Raster Layers
 path.terrain.nm &lt;- &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/MLRA42_topo&quot;
 terrain.nm &lt;- preStack(path = path.terrain.nm, pattern = &quot;*.tif$&quot;)
@@ -769,8 +807,8 @@ file.copy(terrain.co, &quot;/data/data2/data/esgMapping/analysis/data/derived_da
 file.copy(terrain.nm, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM/&quot;)
 terrain.co.copy &lt;- preStack(path = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/&quot;, pattern = &quot;*.tif$&quot;)</code></pre>
 </div>
-<div id="process-lithology-data" class="section level2">
-<h2>Process lithology data</h2>
+<div id="lithology-data" class="section level3">
+<h3>Lithology Data</h3>
 <pre class="r"><code>#Raster Layers
 co.glim.latlon &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/NM_CO_GLiM&quot;,
     layer = &quot;GLiM_CO&quot;)
@@ -825,8 +863,8 @@ nm_litho_raster_plot
 writeRaster(co_litho_raster.layer, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/lithology&quot;, bylayer=T, suffix=levels(co.glim$xx), format=&quot;GTiff&quot;, overwrite=T)
 writeRaster(nm_litho_raster.layer, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM/lithology&quot;, bylayer=T, suffix=levels(nm.glim$xx), format=&quot;GTiff&quot;, overwrite=T)</code></pre>
 </div>
-<div id="process-worldclim-climate-data" class="section level2">
-<h2>Process WorldClim climate data</h2>
+<div id="worldclim-climate-data" class="section level3">
+<h3>WorldClim Climate Data</h3>
 <pre class="r"><code>#set output folders
 input_folder &lt;- &quot;/data/Global_Covariate_Layers/WorldClim/prec&quot;
 co.output_folder &lt;-&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO&quot;
@@ -978,8 +1016,8 @@ nm.prec.stack &lt;- stack(paste0(nm.output_folder, &quot;/&quot;, mixedsort(list
 nm.temp.stack &lt;- stack(paste0(nm.output_folder, &quot;/&quot;, mixedsort(list.files(nm.output_folder, pattern = &quot;Temp_M&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)
 nm.bio.stack &lt;- stack(paste0(nm.output_folder, &quot;/&quot;, mixedsort(list.files(nm.output_folder, pattern = &quot;Bio_M&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)</code></pre>
 </div>
-<div id="process-gamma-data" class="section level2">
-<h2>Process GAMMA data</h2>
+<div id="gamma-data" class="section level3">
+<h3>GAMMA data</h3>
 <pre class="r"><code>#paths to GAMMA data
 NAMrad_exp &lt;- &quot;/data/data2/data/GAMMA_DATA/NAMrad_exp/NAMrad_exp.flt&quot;
 NAMrad_K &lt;- &quot;/data/data2/data/GAMMA_DATA/NAMrad_K/NAMrad_K.flt&quot;
@@ -1005,8 +1043,8 @@ gdalwarp(NAMrad_U, dstfile=paste0(co.path.NAMrad, &quot;/&quot;, &quot;NAMrad_U&
 co.namrad.stack &lt;- stack(paste0(co.path.NAMrad, &quot;/&quot;, mixedsort(list.files(co.path.NAMrad, pattern = &quot;NAMrad&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)
 nm.namrad.stack &lt;- stack(paste0(nm.path.NAMrad, &quot;/&quot;, mixedsort(list.files(nm.path.NAMrad, pattern = &quot;NAMrad&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)</code></pre>
 </div>
-<div id="process-soil-sediment-thickness-layer" class="section level2">
-<h2>Process Soil-Sediment Thickness layer</h2>
+<div id="soil-sediment-thickness" class="section level3">
+<h3>Soil-Sediment Thickness</h3>
 <pre class="r"><code>### Sed Thickness###
 soil_thick &lt;- raster(&quot;/data/data2/data/Global_Covariate_Layers/average_soil_and_sedimentary_deposit_thickness.tif&quot;)
 
@@ -1038,8 +1076,8 @@ gdalwarp(paste0(input_folder, &quot;/&quot;, sedThick, sep = &quot;&quot;), dstf
 
 NM_soil_thick &lt;- raster(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM/soil_thick.tif&quot;)</code></pre>
 </div>
-<div id="process-250m-soil-grids" class="section level2">
-<h2>Process 250m Soil Grids</h2>
+<div id="soil-grids-250-m" class="section level3">
+<h3>Soil Grids (250-m)</h3>
 <pre class="r"><code>#-----------------------------------------------------------------------------------------------------------
 # Loading 250m Soil Grids points extracted from downloaded raster layers
 # CO Points
@@ -1227,8 +1265,8 @@ setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covari
 writeRaster(soil.grids.nm.proj.stack, filename = var.name, bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
 #-----------------------------------------------------------------------------------------------------------</code></pre>
 </div>
-<div id="load-gee-monthly-rs-mean-and-std-rasters" class="section level2">
-<h2>Load GEE Monthly RS Mean and STD rasters</h2>
+<div id="gee-monthly-rs-rasters" class="section level3">
+<h3>GEE Monthly RS rasters</h3>
 <pre class="r"><code>path.gee &lt;- &quot;/data/data2/data/ESG_GEE&quot;
 
 #--------NM GEE layers
@@ -1359,8 +1397,8 @@ writeRaster(nm.mir.gee.proj.brick, filename = names(nm.mir.gee.proj.brick), byla
 writeRaster(nm.lst.day.gee.proj.brick, filename = names(nm.lst.day.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
 writeRaster(nm.lst.night.gee.proj.brick, filename = names(nm.lst.night.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)</code></pre>
 </div>
-<div id="process-landcover" class="section level2">
-<h2>Process Landcover</h2>
+<div id="landcover" class="section level3">
+<h3>Landcover</h3>
 <pre class="r"><code>#-----------------------------------------------------------------------------------------------------------
 #------Landcover classes
 # Water, Evergreen Needleleaf forest, Evergreen Broadleaf forest, Deciduous Needleleaf forest, Deciduous
@@ -1390,8 +1428,8 @@ writeRaster(co_landcover_raster.layer, filename = names(co_landcover_raster.laye
 setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM&quot;)
 writeRaster(nm_landcover_raster.layer, filename = names(nm_landcover_raster.layer), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)</code></pre>
 </div>
-<div id="load-in-hyper-temporal-imagery" class="section level2">
-<h2>Load in Hyper-temporal imagery</h2>
+<div id="hyper-temporal-imagery" class="section level3">
+<h3>Hyper-temporal imagery</h3>
 <pre class="r"><code>CO_infill.ndvi &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_NDVI_infill.tif&quot;)
 CO_infill.evi &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_EVI_infill.tif&quot;)
 CO_infill.vi.red &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_RED_infill.tif&quot;)
@@ -1461,8 +1499,9 @@ foreach(i = 1:length(nm.hyper.premask.list), .packages = c(&quot;raster&quot;), 
 co.hyper &lt;- preStack(path = co.hyper.path, pattern = &quot;.*.tif&quot;)
 nm.hyper &lt;- preStack(path = nm.hyper.path, pattern = &quot;.*.tif&quot;)</code></pre>
 </div>
-<div id="align-raster-covariate-extents-to-allow-stacking" class="section level2">
-<h2>Align Raster Covariate Extents to allow stacking</h2>
+</div>
+<div id="align-raster-covariate-extents" class="section level2">
+<h2>Align Raster Covariate Extents</h2>
 <pre class="r"><code>#-------------------Functions for aligning extent, infilling and masking
 #Function to crop list of raster layers to common extent
 cFun &lt;- function(filelist, ext) {
@@ -1599,7 +1638,7 @@ nm.covariates &lt;- c(nm.covariates, nm.hyper)
 nm.covariates.stack &lt;- stack(nm.covariates)</code></pre>
 </div>
 <div id="extract-point-data" class="section level2">
-<h2>Extract point data</h2>
+<h2>Extract Point Data</h2>
 <pre class="r"><code>#----------------------- Extract Point Covariate Data  --------------------------------------------------------
 #extrating point from masked rasters causes ~110 points to contain NA values
 
@@ -1767,6 +1806,9 @@ nm.spatial.validation.points.cov &lt;- nm.spatial.validation.points.cov[-nm.val.
 
 writeOGR(co.spatial.validation.points.cov , dsn=&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/&quot;, layer=&quot;CO_points_cov_vals&quot;, driver=&quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)
 writeOGR(nm.spatial.validation.points.cov , dsn=&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/&quot;, layer=&quot;NM_points_cov_vals&quot;, driver=&quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)</code></pre>
+</div>
+<div id="data-output" class="section level2">
+<h2>Data Output</h2>
 <pre class="r"><code>#------------------------------------------------------------------------------------------------
 #Output data for modeling steps
 save(co.points.covariates,co.spatial.points.cov, co.validation.points.covariates, co.spatial.validation.points.cov, co.covariates.stack, file = &quot;/data/data2/data/esgMapping/R/CO_ESG_modeling_data.Rdata&quot;)
@@ -1809,6 +1851,7 @@ loaded via a namespace (and not attached):
 [13] tools_3.5.2       stringr_1.4.0     glue_1.3.1       
 [16] xfun_0.6          yaml_2.2.0        compiler_3.5.2   
 [19] htmltools_0.3.6   knitr_1.23       </code></pre>
+</div>
 </div>
 </div>
 
