@@ -52,7 +52,7 @@ NM_raster <- rasterize(NM, r.nm)
 res(NM_raster) <- 250
 plot(NM_raster)
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # CO points #
 co.nasis <- readOGR(dsn = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/nasis35_ESGs", layer = "nasis35_esdjn_esgjn")
 co.nasis.edit <- co.nasis[co.nasis@data$ESG_number!=0, ]
@@ -68,7 +68,7 @@ co.points <- spTransform(co.nasis.edit, crs(CO))
 co.points@data$ESG_ID <- paste0("ES", co.points$ESG_number)
 writeOGR(co.points, dsn = "/data/data2/data/esgMapping/analysis/data/derived_data/vector_data", layer = "CO_points_final", driver = "ESRI Shapefile", overwrite_layer = TRUE)
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # NM points #
 nm.nasis <- readOGR(dsn = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/nasis42_ESDs", layer = "nasis42_esdjn")
 nm.nasis.edit <- nm.nasis[is.na(nm.nasis@data$First_ecoc) == FALSE, ]
@@ -96,14 +96,14 @@ nm.points@data$ESG_ID <- paste0("ES", nm.points$ESG_mun)
 
 writeOGR(nm.points, dsn = "/data/data2/data/esgMapping/analysis/data/derived_data/vector_data", layer = "NM_points_final", driver = "ESRI Shapefile", overwrite_layer = TRUE)
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 #create esite df with site index
 co.site_id <- data.frame(seq(1,nrow(co.points),1), co.points$ESG_ID)
 names(co.site_id) <- c("Index", "esite")
 
 nm.site_id <- data.frame(seq(1,nrow(nm.points),1), nm.points$ESG_ID)
 names(nm.site_id) <- c("Index", "esite")
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 ```
 
 ## Process Covariate Data
@@ -121,7 +121,7 @@ terrain.co_list <- unstack(stack(terrain.co))
 terrain.co.names <- sapply(strsplit(basename(terrain.co), split = ".", fixed = TRUE), function(x) (x[1]))
 terrain.co.stack <- stack(terrain.co)
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 #Copy Raster Covariates
 file.copy(terrain.co, "/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/")
 file.copy(terrain.nm, "/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM/")
@@ -207,7 +207,7 @@ temp.list <- mixedsort(list.files("/data/data2/data/Global_Covariate_Layers/Worl
 bio.list <- mixedsort(list.files("/data/data2/data/Global_Covariate_Layers/WorldClim/bio/", pattern = "hdr.adf",
     recursive = TRUE, include.dirs = TRUE))
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Colorado Palteau process #
 
 #------ Precip processing --------#
@@ -269,7 +269,7 @@ foreach(i = 1:length(bio.list), .packages = c("gdalUtils", "sp")) %dopar% {
         overwrite = TRUE)
 }
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Chihuahuan Desert process #
 
 #------ Precip processing --------#

@@ -540,10 +540,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreee7f891e8c3e0e203c0c060429fea775b952a15a8targetblanke7f891ea"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/e7f891e8c3e0e203c0c060429fea775b952a15a8" target="_blank">e7f891e</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreee0862befe6133e6144c1a04b3777d2c8ec7da485targetblanke0862bea"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/e0862befe6133e6144c1a04b3777d2c8ec7da485" target="_blank">e0862be</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreee7f891e8c3e0e203c0c060429fea775b952a15a8targetblanke7f891ea" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreee0862befe6133e6144c1a04b3777d2c8ec7da485targetblanke0862bea" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -598,6 +598,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/jjmaynard/ESG.Mapping/blob/e0862befe6133e6144c1a04b3777d2c8ec7da485/analysis/ESG_Covariate_Processing.Rmd" target="_blank">e0862be</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-05-30
+</td>
+<td>
+Added ESG_Covariate_Processing
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/jjmaynard/ESG.Mapping/e0862befe6133e6144c1a04b3777d2c8ec7da485/docs/ESG_Covariate_Processing.html" target="_blank">e0862be</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-05-30
+</td>
+<td>
+Added ESG_Covariate_Processing
+</td>
+</tr>
 <tr>
 <td>
 html
@@ -725,7 +759,7 @@ getDoParWorkers()</code></pre>
 </div>
 </div>
 <div id="nasis-es-point-data" class="section level2">
-<h2>NASIS ES point data</h2>
+<h2>NASIS ES Point Data</h2>
 <div id="load-in-nasis-ecological-site-point-data" class="section level4">
 <h4>Load in NASIS ecological site point data</h4>
 <pre class="r"><code>#Study areas
@@ -755,7 +789,7 @@ NM_raster &lt;- rasterize(NM, r.nm)
 res(NM_raster) &lt;- 250
 plot(NM_raster)
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # CO points #
 co.nasis &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/nasis35_ESGs&quot;, layer = &quot;nasis35_esdjn_esgjn&quot;)
 co.nasis.edit &lt;- co.nasis[co.nasis@data$ESG_number!=0, ]
@@ -771,7 +805,7 @@ co.points &lt;- spTransform(co.nasis.edit, crs(CO))
 co.points@data$ESG_ID &lt;- paste0(&quot;ES&quot;, co.points$ESG_number)
 writeOGR(co.points, dsn = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data&quot;, layer = &quot;CO_points_final&quot;, driver = &quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # NM points #
 nm.nasis &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/nasis42_ESDs&quot;, layer = &quot;nasis42_esdjn&quot;)
 nm.nasis.edit &lt;- nm.nasis[is.na(nm.nasis@data$First_ecoc) == FALSE, ]
@@ -799,14 +833,14 @@ nm.points@data$ESG_ID &lt;- paste0(&quot;ES&quot;, nm.points$ESG_mun)
 
 writeOGR(nm.points, dsn = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data&quot;, layer = &quot;NM_points_final&quot;, driver = &quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 #create esite df with site index
 co.site_id &lt;- data.frame(seq(1,nrow(co.points),1), co.points$ESG_ID)
 names(co.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
 
 nm.site_id &lt;- data.frame(seq(1,nrow(nm.points),1), nm.points$ESG_ID)
 names(nm.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
-#---------------------------------------------------------------------------------------------------------------------</code></pre>
+#-------------------------------------------------------------------------------------------------</code></pre>
 </div>
 </div>
 <div id="process-covariate-data" class="section level2">
@@ -825,7 +859,7 @@ terrain.co_list &lt;- unstack(stack(terrain.co))
 terrain.co.names &lt;- sapply(strsplit(basename(terrain.co), split = &quot;.&quot;, fixed = TRUE), function(x) (x[1]))
 terrain.co.stack &lt;- stack(terrain.co)
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 #Copy Raster Covariates
 file.copy(terrain.co, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/&quot;)
 file.copy(terrain.nm, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM/&quot;)
@@ -908,7 +942,7 @@ temp.list &lt;- mixedsort(list.files(&quot;/data/data2/data/Global_Covariate_Lay
 bio.list &lt;- mixedsort(list.files(&quot;/data/data2/data/Global_Covariate_Layers/WorldClim/bio/&quot;, pattern = &quot;hdr.adf&quot;,
     recursive = TRUE, include.dirs = TRUE))
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Colorado Palteau process #
 
 #------ Precip processing --------#
@@ -970,7 +1004,7 @@ foreach(i = 1:length(bio.list), .packages = c(&quot;gdalUtils&quot;, &quot;sp&qu
         overwrite = TRUE)
 }
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Chihuahuan Desert process #
 
 #------ Precip processing --------#
