@@ -5,7 +5,8 @@ date: "Feb 10, 2017"
 output: html_document
 ---
 
-## This script downloads and processes a wide range of spatial covariate layers
+# Overview
+#### This script downloads and processes a wide range of spatial covariate layers
 ```{r eval=FALSE}
 required.packages <- c("here", "MODIS", "maptools", "rgdal", "raster", "maps", "lubridate", "sp", "gdalUtils", "prodlim", "Cairo", "lattice", "zoo", "rgeos", "shapefiles", "spatial.tools", "ggplot2", "rasterVis", "stringdist", "data.table", "fastmatch", "pROC", "parallel", "foreach", "plyr", "snowfall", "imputeTS", "signal", "dummies", "gtools", "doParallel")
 new.packages <- required.packages[!(required.packages %in% installed.packages()[,"Package"])]
@@ -104,7 +105,8 @@ names(nm.site_id) <- c("Index", "esite")
 #---------------------------------------------------------------------------------------------------------------------
 ```
 
-##Process terrain data
+## Process Covariate Data
+### Terrain Data
 ```{r eval=FALSE}
 #Raster Layers
 path.terrain.nm <- "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/MLRA42_topo"
@@ -125,7 +127,7 @@ file.copy(terrain.nm, "/data/data2/data/esgMapping/analysis/data/derived_data/ra
 terrain.co.copy <- preStack(path = "/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/", pattern = "*.tif$")
 ```
 
-##Process lithology data
+### Lithology Data
 ```{r eval=FALSE}
 #Raster Layers
 co.glim.latlon <- readOGR(dsn = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/NM_CO_GLiM",
@@ -183,7 +185,7 @@ writeRaster(nm_litho_raster.layer, "/data/data2/data/esgMapping/analysis/data/de
 
 ```
 
-##Process WorldClim climate data
+### WorldClim Climate Data
 ```{r eval=FALSE}
 #set output folders
 input_folder <- "/data/Global_Covariate_Layers/WorldClim/prec"
@@ -338,7 +340,7 @@ nm.bio.stack <- stack(paste0(nm.output_folder, "/", mixedsort(list.files(nm.outp
 
 ```
 
-##Process GAMMA data
+### GAMMA data
 ```{r eval=FALSE}
 #paths to GAMMA data
 NAMrad_exp <- "/data/data2/data/GAMMA_DATA/NAMrad_exp/NAMrad_exp.flt"
@@ -366,7 +368,7 @@ co.namrad.stack <- stack(paste0(co.path.NAMrad, "/", mixedsort(list.files(co.pat
 nm.namrad.stack <- stack(paste0(nm.path.NAMrad, "/", mixedsort(list.files(nm.path.NAMrad, pattern = "NAMrad", recursive = TRUE, include.dirs = TRUE))), bands = 1)
 ```
 
-##Process Soil-Sediment Thickness layer
+### Soil-Sediment Thickness
 ```{r eval=FALSE}
 ### Sed Thickness###
 soil_thick <- raster("/data/data2/data/Global_Covariate_Layers/average_soil_and_sedimentary_deposit_thickness.tif")
@@ -401,7 +403,7 @@ NM_soil_thick <- raster("/data/data2/data/esgMapping/analysis/data/derived_data/
 
 ```
 
-##Process 250m Soil Grids
+### Soil Grids (250-m)
 ```{r eval=FALSE}
 #-----------------------------------------------------------------------------------------------------------
 # Loading 250m Soil Grids points extracted from downloaded raster layers
@@ -591,7 +593,7 @@ writeRaster(soil.grids.nm.proj.stack, filename = var.name, bylayer=T, format="GT
 #-----------------------------------------------------------------------------------------------------------
 ```
 
-##Load GEE Monthly RS Mean and STD rasters
+### GEE Monthly RS rasters
 ```{r eval=FALSE}
 path.gee <- "/data/data2/data/ESG_GEE"
 
@@ -724,7 +726,7 @@ writeRaster(nm.lst.day.gee.proj.brick, filename = names(nm.lst.day.gee.proj.bric
 writeRaster(nm.lst.night.gee.proj.brick, filename = names(nm.lst.night.gee.proj.brick), bylayer=T, format="GTiff", overwrite=T)
 ```
 
-##Process Landcover
+### Landcover
 ```{r eval=FALSE}
 #-----------------------------------------------------------------------------------------------------------
 #------Landcover classes
@@ -756,7 +758,7 @@ setwd("/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/
 writeRaster(nm_landcover_raster.layer, filename = names(nm_landcover_raster.layer), bylayer=T, format="GTiff", overwrite=T)
 ```
 
-##Load in Hyper-temporal imagery
+### Hyper-temporal imagery
 ```{r eval=FALSE}
 CO_infill.ndvi <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_NDVI_infill.tif")
 CO_infill.evi <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_EVI_infill.tif")
@@ -828,7 +830,7 @@ co.hyper <- preStack(path = co.hyper.path, pattern = ".*.tif")
 nm.hyper <- preStack(path = nm.hyper.path, pattern = ".*.tif")
 ```
 
-##Align Raster Covariate Extents to allow stacking
+## Align Raster Covariate Extents
 ```{r eval=FALSE}
 #-------------------Functions for aligning extent, infilling and masking
 #Function to crop list of raster layers to common extent
@@ -966,7 +968,7 @@ nm.covariates <- c(nm.covariates, nm.hyper)
 nm.covariates.stack <- stack(nm.covariates)
 ```
 
-##Extract point data
+## Extract Point Data
 ```{r eval=FALSE}
 #----------------------- Extract Point Covariate Data  --------------------------------------------------------
 #extrating point from masked rasters causes ~110 points to contain NA values
@@ -1138,6 +1140,7 @@ writeOGR(nm.spatial.validation.points.cov , dsn="/data/data2/data/esgMapping/ana
 
 ```
 
+## Data Output
 ```{r eval=FALSE}
 #------------------------------------------------------------------------------------------------
 #Output data for modeling steps
