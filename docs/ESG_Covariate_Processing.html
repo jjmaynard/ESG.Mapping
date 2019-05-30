@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Jonathan Maynard" />
+
+
+<title>ESG Covariate Processing</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Ecological Site Mapping</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Overview</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Code
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="code.html">Code Sections</a>
+    </li>
+    <li>
+      <a href="ESG_Covariate_Processing.html">Covariate Processing</a>
+    </li>
+  </ul>
+</li>
+<li>
+  <a href="data.html">Data</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/jjmaynard/ESG.Mapping">
+    <span class="fa fa-github"></span>
+     
+    Git Repository
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">ESG Covariate Processing</h1>
+<h4 class="author">Jonathan Maynard</h4>
+<h4 class="date">Feb 10, 2017</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2019-05-30
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ESG.Mapping/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.3.0). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20190528code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20190528)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20190528code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20190528)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree7e795f97bda9909d2b7123310cecce3aa8dc0c4atargetblank7e795f9a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/7e795f97bda9909d2b7123310cecce3aa8dc0c4a" target="_blank">7e795f9</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree7e795f97bda9909d2b7123310cecce3aa8dc0c4atargetblank7e795f9a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/raw_data/
+    Ignored:    manuscript/figures/
+
+Untracked files:
+    Untracked:  data/derived_data/vector/
+
+Unstaged changes:
+    Modified:   analysis/code.Rmd
+    Modified:   analysis/index.Rmd
+    Modified:   code/Project_creation.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the R Markdown and HTML files. If you’ve configured a remote Git repository (see <code>?wflow_git_remote</code>), click on the hyperlinks in the table below to view them.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/jjmaynard/ESG.Mapping/blob/7e795f97bda9909d2b7123310cecce3aa8dc0c4a/analysis/ESG_Covariate_Processing.Rmd" target="_blank">7e795f9</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-05-30
+</td>
+<td>
+Build ESG covariate processing
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div id="this-script-downloads-and-processes-a-wide-range-of-spatial-covariate-layers" class="section level2">
+<h2>This script downloads and processes a wide range of spatial covariate layers</h2>
+<pre class="r"><code>required.packages &lt;- c(&quot;here&quot;, &quot;MODIS&quot;, &quot;maptools&quot;, &quot;rgdal&quot;, &quot;raster&quot;, &quot;maps&quot;, &quot;lubridate&quot;, &quot;sp&quot;, &quot;gdalUtils&quot;, &quot;prodlim&quot;, &quot;Cairo&quot;, &quot;lattice&quot;, &quot;zoo&quot;, &quot;rgeos&quot;, &quot;shapefiles&quot;, &quot;spatial.tools&quot;, &quot;ggplot2&quot;, &quot;rasterVis&quot;, &quot;stringdist&quot;, &quot;data.table&quot;, &quot;fastmatch&quot;, &quot;pROC&quot;, &quot;parallel&quot;, &quot;foreach&quot;, &quot;plyr&quot;, &quot;snowfall&quot;, &quot;imputeTS&quot;, &quot;signal&quot;, &quot;dummies&quot;, &quot;gtools&quot;, &quot;doParallel&quot;)
+new.packages &lt;- required.packages[!(required.packages %in% installed.packages()[,&quot;Package&quot;])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(required.packages, require, character.only=T)
+rm(required.packages, new.packages)
+
+
+no_cores &lt;- detectCores() - 1  
+cl &lt;- makeCluster(no_cores, type=&quot;SOCK&quot;, outfile = &quot;&quot;)  
+registerDoParallel(cl)  
+getDoParWorkers()</code></pre>
+</div>
+<div id="load-in-nasis-ecological-site-point-data" class="section level2">
+<h2>Load in NASIS ecological site point data</h2>
+<pre class="r"><code>#Study areas
+CO &lt;- readOGR(dsn=&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area&quot;,layer=&quot;epaL4_mlra35sel_bndc&quot;)
+NM &lt;- readOGR(dsn=&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area&quot;,layer=&quot;Chihauhuan_Study_Area_Boundary&quot;)
+
+CO.shapepath &lt;- &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp&quot;
+NM.shapepath &lt;- &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp&quot;
+
+# CO rasterize Set up a raster &#39;template&#39; to use in rasterize()
+ext.co &lt;- extent(CO)
+xy.co &lt;- abs(apply(as.matrix(bbox(CO)), 1, diff))
+r.co &lt;- raster(ext.co, ncol = xy.co[1]/250, nrow = xy.co[2]/250)
+
+# Rasterize the shapefile
+CO_raster &lt;- rasterize(CO, r.co)
+res(CO_raster) &lt;- 250
+plot(CO_raster)
+
+# NM rasterize Set up a raster &#39;template&#39; to use in rasterize()
+ext.nm &lt;- extent(NM)
+xy.nm &lt;- abs(apply(as.matrix(bbox(NM)), 1, diff))
+r.nm &lt;- raster(ext.nm, ncol = xy.nm[1]/250, nrow = xy.nm[2]/250)
+
+# Rasterize the shapefile
+NM_raster &lt;- rasterize(NM, r.nm)
+res(NM_raster) &lt;- 250
+plot(NM_raster)
+
+#---------------------------------------------------------------------------------------------------------------------
+# CO points #
+co.nasis &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/nasis35_ESGs&quot;, layer = &quot;nasis35_esdjn_esgjn&quot;)
+co.nasis.edit &lt;- co.nasis[co.nasis@data$ESG_number!=0, ]
+
+# look at esite class distribution
+co.esite.dist &lt;- plyr::count(co.nasis.edit@data$ESG_Name)
+par(mar = c(10.5, 4, 3.5, 4))
+mp &lt;- barplot(co.esite.dist$freq, axes = FALSE, axisnames = FALSE)
+text(mp, par(&quot;usr&quot;)[3], labels = co.esite.dist$x, srt = 45, adj = c(1.1, 1.1), xpd = TRUE, cex = 0.9)
+axis(2)
+# Project using spTransform
+co.points &lt;- spTransform(co.nasis.edit, crs(CO))
+co.points@data$ESG_ID &lt;- paste0(&quot;ES&quot;, co.points$ESG_number)
+writeOGR(co.points, dsn = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data&quot;, layer = &quot;CO_points_final&quot;, driver = &quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)
+
+#---------------------------------------------------------------------------------------------------------------------
+# NM points #
+nm.nasis &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/nasis42_ESDs&quot;, layer = &quot;nasis42_esdjn&quot;)
+nm.nasis.edit &lt;- nm.nasis[is.na(nm.nasis@data$First_ecoc) == FALSE, ]
+# rite out to manually assign look-up table values to NASIS ESD values
+write.csv(unique(nm.nasis.edit@data$First_ecoc), &quot;nm_nasis_unique_ESD.csv&quot;)
+# remove: &#39;Basalt Hill, Mixed Prairie&#39;, &#39;Gyp Breaks, Desert Grassland&#39;, &#39;Arroyo, Hot Desert Shrub&#39;
+nm.nasis.edit &lt;- nm.nasis.edit[nm.nasis.edit@data$First_ecoc != &quot;Basalt Hill, Mixed Prairie&quot;, ]
+nm.nasis.edit &lt;- nm.nasis.edit[nm.nasis.edit@data$First_ecoc != &quot;Gyp Breaks, Desert Grassland&quot;, ]
+nm.nasis.edit &lt;- nm.nasis.edit[nm.nasis.edit@data$First_ecoc != &quot;Arroyo, Hot Desert Shrub&quot;, ]
+nm.lookup &lt;- read.csv(&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/MLRA42_NASIS_ESG_lookup.csv&quot;,
+    header = T)
+nm.nasis.edit.data &lt;- nm.nasis.edit@data
+colnames(nm.nasis.edit.data)[9] &lt;- &quot;NASIS_ESD&quot;
+nm.nasis.edit.data.join &lt;- join(nm.nasis.edit.data, nm.lookup)
+nm.nasis.edit@data &lt;- nm.nasis.edit.data.join
+# look at esite class distribution
+nm.esite.dist &lt;- plyr::count(nm.nasis.edit@data$X2016_Esite_Group)
+par(mar = c(10.5, 4, 3.5, 4))
+mp &lt;- barplot(nm.esite.dist$freq, axes = FALSE, axisnames = FALSE)
+text(mp, par(&quot;usr&quot;)[3], labels = nm.esite.dist$x, srt = 45, adj = c(1.1, 1.1), xpd = TRUE, cex = 0.9)
+axis(2)
+# Project using spTransform
+nm.points &lt;- spTransform(nm.nasis.edit,  crs(CO))
+nm.points@data$ESG_ID &lt;- paste0(&quot;ES&quot;, nm.points$ESG_mun)
+
+writeOGR(nm.points, dsn = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data&quot;, layer = &quot;NM_points_final&quot;, driver = &quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)
+
+#---------------------------------------------------------------------------------------------------------------------
+#create esite df with site index
+co.site_id &lt;- data.frame(seq(1,nrow(co.points),1), co.points$ESG_ID)
+names(co.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
+
+nm.site_id &lt;- data.frame(seq(1,nrow(nm.points),1), nm.points$ESG_ID)
+names(nm.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
+#---------------------------------------------------------------------------------------------------------------------</code></pre>
+</div>
+<div id="process-terrain-data" class="section level2">
+<h2>Process terrain data</h2>
+<pre class="r"><code>#Raster Layers
+path.terrain.nm &lt;- &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/MLRA42_topo&quot;
+terrain.nm &lt;- preStack(path = path.terrain.nm, pattern = &quot;*.tif$&quot;)
+terrain.nm_list &lt;- unstack(stack(terrain.nm))
+terrain.nm.names &lt;- sapply(strsplit(basename(terrain.nm), split = &quot;.&quot;, fixed = TRUE), function(x) (x[1]))
+terrain.nm.stack &lt;- stack(terrain.nm)
+path.terrain.co &lt;- &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/MLRA35_topo/NadAlb250&quot;
+terrain.co &lt;- preStack(path = path.terrain.co, pattern = &quot;*.tif$&quot;)
+terrain.co_list &lt;- unstack(stack(terrain.co))
+terrain.co.names &lt;- sapply(strsplit(basename(terrain.co), split = &quot;.&quot;, fixed = TRUE), function(x) (x[1]))
+terrain.co.stack &lt;- stack(terrain.co)
+
+#---------------------------------------------------------------------------------------------------------------------
+#Copy Raster Covariates
+file.copy(terrain.co, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/&quot;)
+file.copy(terrain.nm, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM/&quot;)
+terrain.co.copy &lt;- preStack(path = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/&quot;, pattern = &quot;*.tif$&quot;)</code></pre>
+</div>
+<div id="process-lithology-data" class="section level2">
+<h2>Process lithology data</h2>
+<pre class="r"><code>#Raster Layers
+co.glim.latlon &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/NM_CO_GLiM&quot;,
+    layer = &quot;GLiM_CO&quot;)
+co.glim &lt;- spTransform(co.glim.latlon, crs(CO))
+nm.glim.latlon &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/NM_CO_GLiM&quot;,
+    layer = &quot;GLiM_NM&quot;)
+nm.glim &lt;- spTransform(nm.glim.latlon, crs(CO))
+
+## Set up a raster &#39;template&#39; to use in rasterize()
+
+# Colorado Palteau
+co.ext &lt;- extent(co.glim)
+co.xy &lt;- abs(apply(as.matrix(bbox(co.glim)), 1, diff))
+co.r &lt;- raster(co.ext, ncol = co.xy[1]/250, nrow = co.xy[2]/250)
+res(co.r) &lt;- 250
+system.time(co_litho_raster &lt;- rasterize(co.glim, co.r, &quot;xx&quot;))
+writeRaster(co_litho_raster, filename = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_layers/CO_litho.tif&quot;,
+    format = &quot;GTiff&quot;, overwrite = T)
+co_litho_raster.layer &lt;- layerize(co_litho_raster, filename = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_layers/CO_litho_layer.tif&quot;,
+    format = &quot;GTiff&quot;, overwrite = T)
+names(co_litho_raster.layer) &lt;- paste0(&quot;lithology_&quot;, levels(co.glim$xx))
+co_litho_raster.layer &lt;- projectRaster(co_litho_raster.layer, crs=crs(CO))
+
+redblue &lt;- colorRampPalette(c(&quot;tomato4&quot;, &quot;yellow2&quot;, &quot;chartreuse4&quot;, &quot;blue2&quot;))
+cbPalette &lt;- redblue(11)
+co_litho_raster_plot &lt;- gplot(co_litho_raster, maxpixels = 8e+05) + geom_raster(aes(fill = factor(value))) +
+    coord_equal() + labs(x = &quot;Easting (m)&quot;, y = &quot;Northing (m)&quot;, fill = &quot;Lithology&quot;) + ggtitle(&quot;CO Lithology&quot;) +
+    scale_fill_manual(values = cbPalette)
+co_litho_raster_plot
+
+# Chihuahuan Desert
+nm.ext &lt;- extent(nm.glim)
+nm.xy &lt;- abs(apply(as.matrix(bbox(nm.glim)), 1, diff))
+nm.r &lt;- raster(nm.ext, ncol = nm.xy[1]/250, nrow = nm.xy[2]/250)
+res(nm.r) &lt;- 250
+system.time(nm_litho_raster &lt;- rasterize(nm.glim, nm.r, &quot;xx&quot;))
+writeRaster(nm_litho_raster, filename = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_layers/NM_litho.tif&quot;,
+    format = &quot;GTiff&quot;, overwrite = T)
+nm_litho_raster.layer &lt;- layerize(nm_litho_raster, filename = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_layers/NM_litho_layer.tif&quot;,
+    format = &quot;GTiff&quot;, overwrite = T)
+names(nm_litho_raster.layer) &lt;- paste0(&quot;lithology_&quot;, levels(nm.glim$xx))
+nm_litho_raster.layer &lt;- projectRaster(nm_litho_raster.layer, crs=crs(NM))
+
+redblue &lt;- colorRampPalette(c(&quot;tomato4&quot;, &quot;yellow2&quot;, &quot;chartreuse4&quot;, &quot;blue2&quot;))
+cbPalette &lt;- redblue(13)
+nm_litho_raster_plot &lt;- gplot(nm_litho_raster, maxpixels = 8e+05) + geom_raster(aes(fill = factor(value))) +
+    coord_equal() + labs(x = &quot;Easting (m)&quot;, y = &quot;Northing (m)&quot;, fill = &quot;Lithology&quot;) + ggtitle(&quot;NM Lithology&quot;) +
+    scale_fill_manual(values = cbPalette)
+nm_litho_raster_plot
+
+#---------- Write Raster Covariates by layer------------------------------------------------------------------
+writeRaster(co_litho_raster.layer, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/lithology&quot;, bylayer=T, suffix=levels(co.glim$xx), format=&quot;GTiff&quot;, overwrite=T)
+writeRaster(nm_litho_raster.layer, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM/lithology&quot;, bylayer=T, suffix=levels(nm.glim$xx), format=&quot;GTiff&quot;, overwrite=T)</code></pre>
+</div>
+<div id="process-worldclim-climate-data" class="section level2">
+<h2>Process WorldClim climate data</h2>
+<pre class="r"><code>#set output folders
+input_folder &lt;- &quot;/data/Global_Covariate_Layers/WorldClim/prec&quot;
+co.output_folder &lt;-&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO&quot;
+nm.output_folder &lt;-&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM&quot;
+# set working directory to input folder
+setwd(input_folder)
+
+s_srs &lt;- &quot;+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0&quot;
+co.t_srs &lt;- crs(CO)
+nm.t_srs &lt;- crs(NM)
+res = 250
+
+prec.list &lt;- mixedsort(list.files(&quot;/data/data2/data/Global_Covariate_Layers/WorldClim/prec/&quot;, pattern = &quot;hdr.adf&quot;,
+    recursive = TRUE, include.dirs = TRUE))
+temp.list &lt;- mixedsort(list.files(&quot;/data/data2/data/Global_Covariate_Layers/WorldClim/tmean/&quot;, pattern = &quot;hdr.adf&quot;,
+    recursive = TRUE, include.dirs = TRUE))
+bio.list &lt;- mixedsort(list.files(&quot;/data/data2/data/Global_Covariate_Layers/WorldClim/bio/&quot;, pattern = &quot;hdr.adf&quot;,
+    recursive = TRUE, include.dirs = TRUE))
+
+#---------------------------------------------------------------------------------------------------------------------
+# Colorado Palteau process #
+
+#------ Precip processing --------#
+
+# set input folder
+input_folder &lt;- &quot;/data/data2/data/Global_Covariate_Layers/WorldClim/prec&quot;
+# set up temp files for output.vrt
+output.vrt &lt;- list()
+for (i in 1:length(prec.list)) {
+    output.vrt[[i]] &lt;- paste(tempfile(), &quot;.vrt&quot;, sep = &quot;&quot;)
+}
+
+# foreach loop
+foreach(i = 1:length(prec.list), .packages = c(&quot;gdalUtils&quot;, &quot;sp&quot;)) %dopar% {
+    gdalbuildvrt(paste0(input_folder, &quot;/&quot;, prec.list[[i]], sep = &quot;&quot;), output.vrt = output.vrt[[i]], separate = FALSE,
+        tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+    gdalwarp(output.vrt[[i]], dstfile = paste0(co.output_folder, &quot;/&quot;, &quot;Precip_M&quot;, &quot;_&quot;, i, &quot;.tif&quot;), of = &quot;GTiff&quot;,
+        s_srs = s_srs, t_srs = co.t_srs, tr = c(res, res), r = &quot;bilinear&quot;, dstalpha = TRUE, te = c(as.vector(bbox(CO_raster))),
+        overwrite = TRUE)
+
+}
+
+#------ Temp processing --------#
+
+# set input folder
+input_folder &lt;- &quot;/data/data2/data/Global_Covariate_Layers/WorldClim/tmean&quot;
+# set up temp files for output.vrt
+output.vrt &lt;- list()
+for (i in 1:length(temp.list)) {
+    output.vrt[[i]] &lt;- paste(tempfile(), &quot;.vrt&quot;, sep = &quot;&quot;)
+}
+
+# foreach loop
+foreach(i = 1:length(temp.list), .packages = c(&quot;gdalUtils&quot;, &quot;sp&quot;)) %dopar% {
+    gdalbuildvrt(paste0(input_folder, &quot;/&quot;, temp.list[[i]], sep = &quot;&quot;), output.vrt = output.vrt[[i]], separate = FALSE,
+        tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+    gdalwarp(output.vrt[[i]], dstfile = paste0(co.output_folder, &quot;/&quot;, &quot;Temp_M&quot;, &quot;_&quot;, i, &quot;.tif&quot;), of = &quot;GTiff&quot;,
+        s_srs = s_srs, t_srs = co.t_srs, tr = c(res, res), r = &quot;bilinear&quot;, dstalpha = TRUE, te = c(as.vector(bbox(CO_raster))),
+        overwrite = TRUE)
+
+}
+
+#------ Bio processing --------#
+
+# set input folder
+input_folder &lt;- &quot;/data/data2/data/Global_Covariate_Layers/WorldClim/bio&quot;
+# set up temp files for output.vrt
+output.vrt &lt;- list()
+for (i in 1:length(bio.list)) {
+    output.vrt[[i]] &lt;- paste(tempfile(), &quot;.vrt&quot;, sep = &quot;&quot;)
+}
+
+# foreach loop
+foreach(i = 1:length(bio.list), .packages = c(&quot;gdalUtils&quot;, &quot;sp&quot;)) %dopar% {
+    gdalbuildvrt(paste0(input_folder, &quot;/&quot;, bio.list[[i]], sep = &quot;&quot;), output.vrt = output.vrt[[i]], separate = FALSE,
+        tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+    gdalwarp(output.vrt[[i]], dstfile = paste0(co.output_folder, &quot;/&quot;, &quot;Bio_M&quot;, &quot;_&quot;, i, &quot;.tif&quot;), of = &quot;GTiff&quot;,
+        s_srs = s_srs, t_srs = co.t_srs, tr = c(res, res), r = &quot;bilinear&quot;, dstalpha = TRUE, te = c(as.vector(bbox(CO_raster))),
+        overwrite = TRUE)
+}
+
+#---------------------------------------------------------------------------------------------------------------------
+# Chihuahuan Desert process #
+
+#------ Precip processing --------#
+
+# set input folder
+input_folder &lt;- &quot;/data/data2/data/Global_Covariate_Layers/WorldClim/prec&quot;
+# set up temp files for output.vrt
+output.vrt &lt;- list()
+for (i in 1:length(prec.list)) {
+    output.vrt[[i]] &lt;- paste(tempfile(), &quot;.vrt&quot;, sep = &quot;&quot;)
+}
+
+# foreach loop
+foreach(i = 1:length(prec.list), .packages = c(&quot;gdalUtils&quot;, &quot;sp&quot;)) %dopar% {
+    gdalbuildvrt(paste0(input_folder, &quot;/&quot;, prec.list[[i]], sep = &quot;&quot;), output.vrt = output.vrt[[i]], separate = FALSE,
+        tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+    gdalwarp(output.vrt[[i]], dstfile = paste0(nm.output_folder, &quot;/&quot;, &quot;Precip_M&quot;, &quot;_&quot;, i, &quot;.tif&quot;), of = &quot;GTiff&quot;,
+        s_srs = s_srs, t_srs = nm.t_srs, tr = c(res, res), r = &quot;bilinear&quot;, dstalpha = TRUE, te = c(as.vector(bbox(NM_raster))),
+        overwrite = TRUE)
+}
+
+#------ Temp processing --------#
+
+# set input folder
+input_folder &lt;- &quot;/data/data2/data/Global_Covariate_Layers/WorldClim/tmean&quot;
+# set up temp files for output.vrt
+output.vrt &lt;- list()
+for (i in 1:length(temp.list)) {
+    output.vrt[[i]] &lt;- paste(tempfile(), &quot;.vrt&quot;, sep = &quot;&quot;)
+}
+
+# foreach loop
+foreach(i = 1:length(temp.list), .packages = c(&quot;gdalUtils&quot;, &quot;sp&quot;)) %dopar% {
+    gdalbuildvrt(paste0(input_folder, &quot;/&quot;, temp.list[[i]], sep = &quot;&quot;), output.vrt = output.vrt[[i]], separate = FALSE,
+        tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+    gdalwarp(output.vrt[[i]], dstfile = paste0(nm.output_folder, &quot;/&quot;, &quot;Temp_M&quot;, &quot;_&quot;, i, &quot;.tif&quot;), of = &quot;GTiff&quot;,
+        s_srs = s_srs, t_srs = nm.t_srs, tr = c(res, res), r = &quot;bilinear&quot;, dstalpha = TRUE, te = c(as.vector(bbox(NM_raster))),
+        overwrite = TRUE)
+}
+
+#------ Bio processing --------#
+
+# set input folder
+input_folder &lt;- &quot;/data/data2/data/Global_Covariate_Layers/WorldClim/bio&quot;
+# set up temp files for output.vrt
+output.vrt &lt;- list()
+for (i in 1:length(bio.list)) {
+    output.vrt[[i]] &lt;- paste(tempfile(), &quot;.vrt&quot;, sep = &quot;&quot;)
+}
+
+# foreach loop
+foreach(i = 1:length(bio.list), .packages = c(&quot;gdalUtils&quot;, &quot;sp&quot;)) %dopar% {
+    gdalbuildvrt(paste0(input_folder, &quot;/&quot;, bio.list[[i]], sep = &quot;&quot;), output.vrt = output.vrt[[i]], separate = FALSE,
+        tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+    gdalwarp(output.vrt[[i]], dstfile = paste0(nm.output_folder, &quot;/&quot;, &quot;Bio_M&quot;, &quot;_&quot;, i, &quot;.tif&quot;), of = &quot;GTiff&quot;,
+        s_srs = s_srs, t_srs = nm.t_srs, tr = c(res, res), r = &quot;bilinear&quot;, dstalpha = TRUE, te = c(as.vector(bbox(NM_raster))),
+        overwrite = TRUE)
+}
+
+#-----------------------------------------------------------------------------------------------------------
+#Wclim stacks
+co.prec.stack &lt;- stack(paste0(co.output_folder, &quot;/&quot;, mixedsort(list.files(co.output_folder, pattern = &quot;Precip_M&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)
+co.temp.stack &lt;- stack(paste0(co.output_folder, &quot;/&quot;, mixedsort(list.files(co.output_folder, pattern = &quot;Temp_M&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)
+co.bio.stack &lt;- stack(paste0(co.output_folder, &quot;/&quot;, mixedsort(list.files(co.output_folder, pattern = &quot;Bio_M&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)
+
+nm.prec.stack &lt;- stack(paste0(nm.output_folder, &quot;/&quot;, mixedsort(list.files(nm.output_folder, pattern = &quot;Precip_M&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)
+nm.temp.stack &lt;- stack(paste0(nm.output_folder, &quot;/&quot;, mixedsort(list.files(nm.output_folder, pattern = &quot;Temp_M&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)
+nm.bio.stack &lt;- stack(paste0(nm.output_folder, &quot;/&quot;, mixedsort(list.files(nm.output_folder, pattern = &quot;Bio_M&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)</code></pre>
+</div>
+<div id="process-gamma-data" class="section level2">
+<h2>Process GAMMA data</h2>
+<pre class="r"><code>#paths to GAMMA data
+NAMrad_exp &lt;- &quot;/data/data2/data/GAMMA_DATA/NAMrad_exp/NAMrad_exp.flt&quot;
+NAMrad_K &lt;- &quot;/data/data2/data/GAMMA_DATA/NAMrad_K/NAMrad_K.flt&quot;
+NAMrad_Th &lt;- &quot;/data/data2/data/GAMMA_DATA/NAMrad_Th/NAMrad_Th.flt&quot;
+NAMrad_U &lt;- &quot;/data/data2/data/GAMMA_DATA/NAMrad_U/NAMrad_U.flt&quot;
+
+co.path.NAMrad &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO&quot;
+nm.path.NAMrad &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM&quot;
+s_srs = &#39;+proj=tmerc +lat_0=0 +lon_0=-100 +k=0.926 +x_0=0 +y_0=0 +ellps=sphere +units=m +no_defs&#39;
+t_srs = crs(NM)
+t_res = 250
+
+gdalwarp(NAMrad_exp, dstfile=paste0(nm.path.NAMrad, &quot;/&quot;, &quot;NAMrad_exp&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),te = c(as.vector(bbox(NM))), overwrite = TRUE)
+gdalwarp(NAMrad_K, dstfile=paste0(nm.path.NAMrad, &quot;/&quot;, &quot;NAMrad_K&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),te = c(as.vector(bbox(NM))), overwrite = TRUE)
+gdalwarp(NAMrad_Th, dstfile=paste0(nm.path.NAMrad, &quot;/&quot;, &quot;NAMrad_Th&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),te = c(as.vector(bbox(NM))), overwrite = TRUE)
+gdalwarp(NAMrad_U, dstfile=paste0(nm.path.NAMrad, &quot;/&quot;, &quot;NAMrad_U&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),te = c(as.vector(bbox(NM))), overwrite = TRUE)
+t_srs = crs(CO)
+gdalwarp(NAMrad_exp, dstfile=paste0(co.path.NAMrad, &quot;/&quot;, &quot;NAMrad_exp&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),te = c(as.vector(bbox(CO))), overwrite = TRUE)
+gdalwarp(NAMrad_K, dstfile=paste0(co.path.NAMrad, &quot;/&quot;, &quot;NAMrad_K&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),te = c(as.vector(bbox(CO))), overwrite = TRUE)
+gdalwarp(NAMrad_Th, dstfile=paste0(co.path.NAMrad, &quot;/&quot;, &quot;NAMrad_Th&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),te = c(as.vector(bbox(CO))), overwrite = TRUE)
+gdalwarp(NAMrad_U, dstfile=paste0(co.path.NAMrad, &quot;/&quot;, &quot;NAMrad_U&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),te = c(as.vector(bbox(CO))), overwrite = TRUE)
+
+co.namrad.stack &lt;- stack(paste0(co.path.NAMrad, &quot;/&quot;, mixedsort(list.files(co.path.NAMrad, pattern = &quot;NAMrad&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)
+nm.namrad.stack &lt;- stack(paste0(nm.path.NAMrad, &quot;/&quot;, mixedsort(list.files(nm.path.NAMrad, pattern = &quot;NAMrad&quot;, recursive = TRUE, include.dirs = TRUE))), bands = 1)</code></pre>
+</div>
+<div id="process-soil-sediment-thickness-layer" class="section level2">
+<h2>Process Soil-Sediment Thickness layer</h2>
+<pre class="r"><code>### Sed Thickness###
+soil_thick &lt;- raster(&quot;/data/data2/data/Global_Covariate_Layers/average_soil_and_sedimentary_deposit_thickness.tif&quot;)
+
+# set output folders
+s_srs &lt;- &quot;+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0&quot;
+co.t_srs &lt;- projection(CO)
+nm.t_srs &lt;- projection(NM)
+res = 250
+sedThick &lt;- list.files(&quot;/data/data2/data/Global_Covariate_Layers/&quot;, pattern = &quot;thickness.tif&quot;, recursive = TRUE,
+    include.dirs = TRUE)
+
+# set input folder
+input_folder &lt;- &quot;/data/data2/data/Global_Covariate_Layers&quot;
+co.output_folder &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO&quot;
+nm.output_folder &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM&quot;
+
+# extract and reproject
+gdalwarp(paste0(input_folder, &quot;/&quot;, sedThick, sep = &quot;&quot;), dstfile = paste0(co.output_folder, &quot;/&quot;, &quot;soil_thick&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;,
+        s_srs = s_srs, t_srs = co.t_srs, tr = c(res, res), r = &quot;bilinear&quot;, dstalpha = TRUE, te = c(as.vector(bbox(CO))),
+        overwrite = TRUE)
+
+CO_soil_thick &lt;- raster(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO/soil_thick.tif&quot;)
+
+
+### NM set up temp files for output.vrt
+gdalwarp(paste0(input_folder, &quot;/&quot;, sedThick, sep = &quot;&quot;), dstfile = paste0(nm.output_folder, &quot;/&quot;, &quot;soil_thick&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;,
+        s_srs = s_srs, t_srs = nm.t_srs, tr = c(res, res), r = &quot;bilinear&quot;, dstalpha = TRUE, te = c(as.vector(bbox(NM))),
+        overwrite = TRUE)
+
+NM_soil_thick &lt;- raster(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM/soil_thick.tif&quot;)</code></pre>
+</div>
+<div id="process-250m-soil-grids" class="section level2">
+<h2>Process 250m Soil Grids</h2>
+<pre class="r"><code>#-----------------------------------------------------------------------------------------------------------
+# Loading 250m Soil Grids points extracted from downloaded raster layers
+# CO Points
+nasis35_ESGs_SoilGrids250vars.geo &lt;- ogrListLayers(&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/SoilGrids250_points/nasis35_ESGs_SoilGrids250vars.gpkg&quot;)
+nasis35_ESGs_SoilGrids250vars.geo &lt;- readOGR(&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/SoilGrids250_points/nasis35_ESGs_SoilGrids250vars.gpkg&quot;, nasis35_ESGs_SoilGrids250vars.geo[1])
+nasis35_ESGs_SoilGrids250vars.geo.edit &lt;- nasis35_ESGs_SoilGrids250vars.geo[co.nasis@data$ESG_number != 0, ]
+
+# Project using spTransform
+nasis35_ESGs_SoilGrids250vars.points &lt;- spTransform(nasis35_ESGs_SoilGrids250vars.geo.edit, crs(CO))
+nasis35_ESGs_SoilGrids250vars.points@data$ESG_ID &lt;- paste0(&quot;ES&quot;, nasis35_ESGs_SoilGrids250vars.points$ESG_number)
+nasis35_ESGs_SoilGrids250vars.point.data &lt;- nasis35_ESGs_SoilGrids250vars.points@data[13:100]
+
+# NM Points
+nasis42_ESGs_SoilGrids250vars.geo &lt;- ogrListLayers(&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/SoilGrids250_points/nasis42_ESDs_SoilGrids250vars.gpkg&quot;)
+nasis42_ESGs_SoilGrids250vars.geo &lt;- readOGR(&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/SoilGrids250_points/nasis42_ESDs_SoilGrids250vars.gpkg&quot;, nasis42_ESGs_SoilGrids250vars.geo[1])
+nasis42_ESGs_SoilGrids250vars.geo.edit &lt;- nasis42_ESGs_SoilGrids250vars.geo[is.na(nm.nasis@data$First_ecoc) == FALSE, ]
+
+#Subset points based on missing ESGs
+# remove: &#39;Basalt Hill, Mixed Prairie&#39;, &#39;Gyp Breaks, Desert Grassland&#39;, &#39;Arroyo, Hot Desert Shrub&#39;
+nasis42_ESGs_SoilGrids250vars.geo.edit &lt;- nasis42_ESGs_SoilGrids250vars.geo.edit[nasis42_ESGs_SoilGrids250vars.geo.edit@data$First_ecoc !=
+    &quot;Basalt Hill, Mixed Prairie&quot;, ]
+nasis42_ESGs_SoilGrids250vars.geo.edit &lt;- nasis42_ESGs_SoilGrids250vars.geo.edit[nasis42_ESGs_SoilGrids250vars.geo.edit@data$First_ecoc !=
+    &quot;Gyp Breaks, Desert Grassland&quot;, ]
+nasis42_ESGs_SoilGrids250vars.geo.edit &lt;- nasis42_ESGs_SoilGrids250vars.geo.edit[nasis42_ESGs_SoilGrids250vars.geo.edit@data$First_ecoc !=
+    &quot;Arroyo, Hot Desert Shrub&quot;, ]
+
+nasis42_ESGs_SoilGrids250vars.points &lt;- spTransform(nasis42_ESGs_SoilGrids250vars.geo.edit, crs(NM))
+nasis42_ESGs_SoilGrids250vars.points@data$ESG_ID &lt;- paste0(&quot;ES&quot;, nasis42_ESGs_SoilGrids250vars.points$ESG_mun)
+nasis42_ESGs_SoilGrids250vars.point.data &lt;- nasis42_ESGs_SoilGrids250vars.points@data[11:98]
+
+#-----------------------------------------------------------------------------------------------------------
+# Code to download SoilGrids250 via WebServices
+required.packages &lt;- c(&quot;RCurl&quot;,&quot;rgdal&quot;,&quot;GSIF&quot;,&quot;raster&quot;,&quot;plotKML&quot;,&quot;XML&quot;,&quot;lattice&quot;,&quot;aqp&quot;,&quot;soiltexture&quot;,&quot;MODIS&quot;, &quot;doParallel&quot;, &quot;foreach&quot;)
+new.packages &lt;- required.packages[!(required.packages %in% installed.packages()[,&quot;Package&quot;])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(required.packages, require, character.only=T)
+rm(required.packages, new.packages)
+
+# Set up parrallel backend
+cluster &lt;- makeCluster(24)
+registerDoParallel(cluster)
+getDoParWorkers()
+
+if(.Platform$OS.type == &quot;windows&quot;){
+   gdal.dir &lt;- shortPathName(&quot;C:/Program files/GDAL&quot;)
+   gdal_translate &lt;- paste0(gdal.dir, &quot;/gdal_translate.exe&quot;)
+   gdalwarp &lt;- paste0(gdal.dir, &quot;/gdalwarp.exe&quot;)
+   gdalinfo &lt;- paste0(gdal.dir, &quot;/gdalinfo.exe&quot;)
+ } else {
+   gdal_translate = &quot;gdal_translate&quot;
+   gdalwarp = &quot;gdalwarp&quot;
+   gdalinfo = &quot;gdalinfo&quot;
+ }
+
+#get list of SoilGrids250 variable names from previous point dataset
+var.name &lt;- substr(names(nasis42_ESGs_SoilGrids250vars.point.data), 1,nchar(names(nasis42_ESGs_SoilGrids250vars.point.data))-3)
+
+# Project using spTransform
+CO.proj &lt;- spTransform(CO, crs(&quot;+proj=longlat +datum=WGS84&quot;))
+NM.proj &lt;- spTransform(NM, crs(&quot;+proj=longlat +datum=WGS84&quot;))
+te.co = as.vector(CO.proj@bbox)
+te.nm = as.vector(NM.proj@bbox)
+
+bb &lt;- matrix(nrow=2, c(-180,-62.00081,179.9999,87.37))
+o.x.co = 172800 + round(172800*(te.co[1]-bb[1,2])/(bb[1,2]-bb[1,1]))
+o.y.co = round(71698*(bb[2,2]-te.co[4])/(bb[2,2]-bb[2,1]))
+d.y.co = round(71698*(te.co[4]-te.co[2])/(bb[2,2]-bb[2,1]))
+d.x.co = round(172800*(te.co[3]-te.co[1])/(bb[1,2]-bb[1,1]))
+
+o.x.nm = 172800 + round(172800*(te.nm[1]-bb[1,2])/(bb[1,2]-bb[1,1]))
+o.y.nm = round(71698*(bb[2,2]-te.nm[4])/(bb[2,2]-bb[2,1]))
+d.y.nm = round(71698*(te.nm[4]-te.nm[2])/(bb[2,2]-bb[2,1]))
+d.x.nm = round(172800*(te.nm[3]-te.nm[1])/(bb[1,2]-bb[1,1]))
+
+#Change wd
+setwd(&quot;/data/data2/data/Global_Covariate_Layers/SoilGrids250&quot;)
+wcs = &quot;http://data.isric.org/geoserver/sg250m/wcs?&quot;
+
+# Extract SoilGrids250 for CO-Pat study area
+for(i in 1:length(var.name)){
+  t1 &lt;- newXMLNode(&quot;WCS_GDAL&quot;)
+  t1.s &lt;- newXMLNode(&quot;ServiceURL&quot;, wcs, parent=t1)
+  t1.l &lt;- newXMLNode(&quot;CoverageName&quot;, var.name[i], parent=t1)
+  xml.out &lt;- paste(var.name[i], &quot;.xml&quot;, sep=&quot;&quot;)
+  saveXML(t1, file=xml.out)
+  f.name &lt;- paste(var.name[i], &quot;_CO.tif&quot;, sep=&quot;&quot;)
+  if(!file.exists(f.name)){
+    system(paste0(gdal_translate, &#39; &#39;, xml.out, &#39; &#39;, f.name,  &#39; -co \&quot;COMPRESS=DEFLATE\&quot; -projwin &#39;, paste(c(te.co[1], te.co[4],te.co[3], te.co[2]), collapse=&quot; &quot;)))
+  }
+ }
+
+# Extract SoilGrids250 for NM-Chihuahaun study area
+for(i in 1:length(var.name)){
+  t1 &lt;- newXMLNode(&quot;WCS_GDAL&quot;)
+  t1.s &lt;- newXMLNode(&quot;ServiceURL&quot;, wcs, parent=t1)
+  t1.l &lt;- newXMLNode(&quot;CoverageName&quot;, var.name[i], parent=t1)
+  xml.out &lt;- paste(var.name[i], &quot;.xml&quot;, sep=&quot;&quot;)
+  saveXML(t1, file=xml.out)
+  f.name &lt;- paste(var.name[i], &quot;_NM.tif&quot;, sep=&quot;&quot;)
+  if(!file.exists(f.name)){
+   system(paste0(gdal_translate, &#39; &#39;, xml.out, &#39; &#39;, f.name, &#39; -co \&quot;COMPRESS=DEFLATE\&quot; -projwin &#39;, paste(c(te.nm[1], te.nm[4],te.nm[3], te.nm[2]), collapse=&quot; &quot;)))
+  }
+}
+
+
+path.soilgrids &lt;- &quot;/data/data2/data/Global_Covariate_Layers/SoilGrids250&quot;
+
+# CO SoilGrids250
+soil.grids.co &lt;- preStack(path = path.soilgrids, pattern = &quot;*_CO.tif$&quot;)
+soil.grids.co.list &lt;- unstack(stack(soil.grids.co))
+
+# NM SoilGrids250
+soil.grids.nm &lt;- preStack(path = path.soilgrids, pattern = &quot;*_NM.tif$&quot;)
+soil.grids.nm.list &lt;- unstack(stack(soil.grids.nm))
+
+s_srs = crs(soil.grids.co.list[[1]])
+t_srs = crs(CO)
+t_res = 250
+resample_method = &quot;average&quot;
+#get data types
+co.data.types &lt;- seq(1, length(soil.grids.co.list), 1)
+for(i in 1:length(soil.grids.co.list)){
+  co.data.types[i] &lt;- dataType(soil.grids.co.list[[i]])
+}
+nm.data.types &lt;- seq(1, length(soil.grids.nm.list), 1)
+for(i in 1:length(soil.grids.nm.list)){
+  nm.data.types[i] &lt;- dataType(soil.grids.nm.list[[i]])
+}
+# INT1S = Int8
+# INT1U = UInt8
+# INT2S = Int16
+# INT2U = UInt16
+# INT4S = Int32
+# INT4U = UInt32
+#function to convert raster data types to GDAL data types
+data.type.convert &lt;- function(datatype){
+  datatype.mod &lt;- datatype
+  for(i in 1:length(datatype)){
+        if (datatype[i]==&quot;INT1S&quot;) {
+      datatype.mod[i] &lt;- &quot;Byte&quot;
+    } else if (datatype[i]==&quot;INT1U&quot;) {
+      datatype.mod[i] &lt;- &quot;Byte&quot;
+    } else if (datatype[i]==&quot;INT2S&quot;) {
+      datatype.mod[i] &lt;- &quot;Int16&quot;
+    } else if (datatype[i]==&quot;INT2U&quot;) {
+      datatype.mod[i] &lt;- &quot;UInt16&quot;
+    } else if (datatype[i]==&quot;INT4S&quot;) {
+      datatype.mod[i] &lt;- &quot;Int32&quot;
+    } else {
+      datatype.mod[i] &lt;- &quot;UInt32&quot;
+    }
+  }
+  return(datatype.mod)
+}
+
+nm.data.types.mod &lt;- data.type.convert(nm.data.types)
+co.data.types.mod &lt;- data.type.convert(co.data.types)
+
+foreach(i = 1:length(soil.grids.nm), .packages = c(&quot;gdalUtils&quot;, &quot;sp&quot;)) %dopar% {
+          gdalwarp(soil.grids.nm[[i]], dstfile=paste0(path.soilgrids, &quot;/&quot;, unique(substr(basename(soil.grids.nm[[i]]), 1,
+            nchar(basename(soil.grids.nm[[i]]))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            r = resample_method, ot = nm.data.types.mod[i], te = c(as.vector(bbox(NM))), overwrite = TRUE)
+}
+
+foreach(i = 1:length(soil.grids.co), .packages = c(&quot;gdalUtils&quot;, &quot;sp&quot;)) %dopar% {
+          gdalwarp(soil.grids.co[[i]], dstfile=paste0(path.soilgrids, &quot;/&quot;, unique(substr(basename(soil.grids.co[[i]]), 1,
+            nchar(basename(soil.grids.co[[i]]))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            r = resample_method, ot = co.data.types.mod[i],te = c(as.vector(bbox(CO))), overwrite = TRUE)
+}
+
+# CO SoilGrids250
+soil.grids.co.proj &lt;- preStack(path = path.soilgrids, pattern = &quot;*_CO_proj.tif$&quot;)
+soil.grids.co.proj.list &lt;- unstack(stack(soil.grids.co.proj))
+soil.grids.co.proj.stack &lt;- stack(soil.grids.co.proj)
+
+# NM SoilGrids250
+soil.grids.nm.proj &lt;- preStack(path = path.soilgrids, pattern = &quot;*_NM_proj.tif$&quot;)
+soil.grids.nm.proj.list &lt;- unstack(stack(soil.grids.nm.proj))
+soil.grids.nm.proj.stack &lt;- stack(soil.grids.nm.proj)
+
+#---------- Write Raster Covariates by layer----------------------------------------------------------------
+setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO&quot;)
+writeRaster(soil.grids.co.proj.stack, filename = var.name, bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM&quot;)
+writeRaster(soil.grids.nm.proj.stack, filename = var.name, bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+#-----------------------------------------------------------------------------------------------------------</code></pre>
+</div>
+<div id="load-gee-monthly-rs-mean-and-std-rasters" class="section level2">
+<h2>Load GEE Monthly RS Mean and STD rasters</h2>
+<pre class="r"><code>path.gee &lt;- &quot;/data/data2/data/ESG_GEE&quot;
+
+#--------NM GEE layers
+nm.ndvi.gee &lt;- preStack(path = path.gee, pattern = &quot;NM_NDVI_monthly_MeanStd.tif&quot;)
+nm.mir.gee &lt;- preStack(path = path.gee, pattern = &quot;NM_MIR_monthly_MeanStd.tif&quot;)
+nm.lst.day.gee &lt;- preStack(path = path.gee, pattern = &quot;NM_LST_Day_monthly_MeanStd.tif&quot;)
+nm.lst.night.gee &lt;- preStack(path = path.gee, pattern = &quot;NM_LST_Night_monthly_MeanStd.tif&quot;)
+
+nm.ndvi.gee.brick &lt;- brick(nm.ndvi.gee)
+nm.mir.gee.brick &lt;- brick(nm.mir.gee)
+nm.lst.day.gee.brick &lt;- brick(nm.lst.day.gee)
+nm.lst.night.gee.brick &lt;- brick(nm.lst.night.gee)
+
+s_srs = crs(nm.ndvi.gee.brick[[1]])
+t_srs = crs(NM)
+t_res = 250
+
+          gdalwarp(nm.ndvi.gee[[i]], dstfile=paste0(path.gee, &quot;/&quot;, unique(substr(basename(nm.ndvi.gee), 1,
+            nchar(basename(nm.ndvi.gee))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            te = c(as.vector(bbox(NM))), overwrite = TRUE)
+
+          gdalwarp(nm.mir.gee[[i]], dstfile=paste0(path.gee, &quot;/&quot;, unique(substr(basename(nm.mir.gee), 1,
+            nchar(basename(nm.mir.gee))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            te = c(as.vector(bbox(NM))), overwrite = TRUE)
+
+          gdalwarp(nm.lst.day.gee[[i]], dstfile=paste0(path.gee, &quot;/&quot;, unique(substr(basename(nm.lst.day.gee), 1,
+            nchar(basename(nm.lst.day.gee))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            te = c(as.vector(bbox(NM))), overwrite = TRUE)
+
+          gdalwarp(nm.lst.night.gee[[i]], dstfile=paste0(path.gee, &quot;/&quot;, unique(substr(basename(nm.lst.night.gee), 1,
+            nchar(basename(nm.lst.night.gee))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            te = c(as.vector(bbox(NM))), overwrite = TRUE)
+
+nm.ndvi.gee.proj &lt;- preStack(path = path.gee, pattern = &quot;.*NM_NDVI.*_proj&quot;)
+nm.mir.gee.proj &lt;- preStack(path = path.gee, pattern = &quot;.*NM_MIR.*_proj&quot;)
+nm.lst.day.gee.proj &lt;- preStack(path = path.gee, pattern = &quot;.*NM_LST_Day.*_proj&quot;)
+nm.lst.night.gee.proj &lt;- preStack(path = path.gee, pattern = &quot;.*NM_LST_Night.*_proj&quot;)
+nm.ndvi.gee.proj.brick &lt;- brick(nm.ndvi.gee.proj)
+nm.mir.gee.proj.brick &lt;- brick(nm.mir.gee.proj)
+nm.lst.day.gee.proj.brick &lt;- brick(nm.lst.day.gee.proj)
+nm.lst.night.gee.proj.brick &lt;- brick(nm.lst.night.gee.proj)
+
+names(nm.ndvi.gee.proj.brick) &lt;- c(&#39;NDVI_Jan_Mean&#39;,&#39;NDVI_Jan_Std&#39;,&#39;NDVI_Feb_Mean&#39;,&#39;NDVI_Feb_Std&#39;,&#39;NDVI_Mar_Mean&#39;,&#39;NDVI_Mar_Std&#39;,
+  &#39;NDVI_Apr_Mean&#39;,&#39;NDVI_Apr_Std&#39;,&#39;NDVI_May_Mean&#39;,&#39;NDVI_May_Std&#39;,&#39;NDVI_Jun_Mean&#39;,&#39;NDVI_Jun_Std&#39;,
+  &#39;NDVI_Jul_Mean&#39;,&#39;NDVI_Jul_Std&#39;,&#39;NDVI_Aug_Mean&#39;,&#39;NDVI_Aug_Std&#39;,&#39;NDVI_Sep_Mean&#39;,&#39;NDVI_Sep_Std&#39;,
+  &#39;NDVI_Oct_Mean&#39;,&#39;NDVI_Oct_Std&#39;,&#39;NDVI_Nov_Mean&#39;,&#39;NDVI_Nov_Std&#39;,&#39;NDVI_Dec_Mean&#39;,&#39;NDVI_Dec_Std&#39;)
+names(nm.mir.gee.proj.brick ) &lt;- c(&#39;MIR_Jan_Mean&#39;,&#39;MIR_Jan_Std&#39;,&#39;MIR_Feb_Mean&#39;,&#39;MIR_Feb_Std&#39;,&#39;MIR_Mar_Mean&#39;,&#39;MIR_Mar_Std&#39;,
+  &#39;MIR_Apr_Mean&#39;,&#39;MIR_Apr_Std&#39;,&#39;MIR_May_Mean&#39;,&#39;MIR_May_Std&#39;,&#39;MIR_Jun_Mean&#39;,&#39;MIR_Jun_Std&#39;,
+  &#39;MIR_Jul_Mean&#39;,&#39;MIR_Jul_Std&#39;,&#39;MIR_Aug_Mean&#39;,&#39;MIR_Aug_Std&#39;,&#39;MIR_Sep_Mean&#39;,&#39;MIR_Sep_Std&#39;,
+  &#39;MIR_Oct_Mean&#39;,&#39;MIR_Oct_Std&#39;,&#39;MIR_Nov_Mean&#39;,&#39;MIR_Nov_Std&#39;,&#39;MIR_Dec_Mean&#39;,&#39;MIR_Dec_Std&#39;)
+names(nm.lst.day.gee.proj.brick) &lt;- c(&#39;LST_Day_Jan_Mean&#39;,&#39;LST_Day_Jan_Std&#39;,&#39;LST_Day_Feb_Mean&#39;,&#39;LST_Day_Feb_Std&#39;,&#39;LST_Day_Mar_Mean&#39;,&#39;LST_Day_Mar_Std&#39;,
+  &#39;LST_Day_Apr_Mean&#39;,&#39;LST_Day_Apr_Std&#39;,&#39;LST_Day_May_Mean&#39;,&#39;LST_Day_May_Std&#39;,&#39;LST_Day_Jun_Mean&#39;,&#39;LST_Day_Jun_Std&#39;,
+  &#39;LST_Day_Jul_Mean&#39;,&#39;LST_Day_Jul_Std&#39;,&#39;LST_Day_Aug_Mean&#39;,&#39;LST_Day_Aug_Std&#39;,&#39;LST_Day_Sep_Mean&#39;,&#39;LST_Day_Sep_Std&#39;,
+  &#39;LST_Day_Oct_Mean&#39;,&#39;LST_Day_Oct_Std&#39;,&#39;LST_Day_Nov_Mean&#39;,&#39;LST_Day_Nov_Std&#39;,&#39;LST_Day_Dec_Mean&#39;,&#39;LST_Day_Dec_Std&#39;)
+names(nm.lst.night.gee.proj.brick) &lt;- c(&#39;LST_Night_Jan_Mean&#39;,&#39;LST_Night_Jan_Std&#39;,&#39;LST_Night_Feb_Mean&#39;,&#39;LST_Night_Feb_Std&#39;,&#39;LST_Night_Mar_Mean&#39;,&#39;LST_Night_Mar_Std&#39;,
+  &#39;LST_Night_Apr_Mean&#39;,&#39;LST_Night_Apr_Std&#39;,&#39;LST_Night_May_Mean&#39;,&#39;LST_Night_May_Std&#39;,&#39;LST_Night_Jun_Mean&#39;,&#39;LST_Night_Jun_Std&#39;,
+  &#39;LST_Night_Jul_Mean&#39;,&#39;LST_Night_Jul_Std&#39;,&#39;LST_Night_Aug_Mean&#39;,&#39;LST_Night_Aug_Std&#39;,&#39;LST_Night_Sep_Mean&#39;,&#39;LST_Night_Sep_Std&#39;,
+  &#39;LST_Night_Oct_Mean&#39;,&#39;LST_Night_Oct_Std&#39;,&#39;LST_Night_Nov_Mean&#39;,&#39;LST_Night_Nov_Std&#39;,&#39;LST_Night_Dec_Mean&#39;,&#39;LST_Night_Dec_Std&#39;)
+
+#--------CO GEE layers
+co.ndvi.gee &lt;- preStack(path = path.gee, pattern = &quot;^CO_NDVI_monthly_MeanStd.tif&quot;)
+co.mir.gee &lt;- preStack(path = path.gee, pattern = &quot;^CO_MIR_monthly_MeanStd.tif&quot;)
+co.lst.day.gee &lt;- preStack(path = path.gee, pattern = &quot;^CO_LST_Day_monthly_MeanStd.tif&quot;)
+co.lst.night.gee &lt;- preStack(path = path.gee, pattern = &quot;^CO_LST_Night_monthly_MeanStd.tif&quot;)
+co.ndvi.gee.brick &lt;- brick(co.ndvi.gee)
+co.mir.gee.brick &lt;- brick(co.mir.gee)
+co.lst.day.gee.brick &lt;- brick(co.lst.day.gee)
+co.lst.night.gee.brick &lt;- brick(co.lst.night.gee)
+
+
+s_srs = crs(co.ndvi.gee.brick[[1]])
+t_srs = crs(CO)
+t_res = 250
+
+          gdalwarp(co.ndvi.gee[[i]], dstfile=paste0(path.gee, &quot;/&quot;, unique(substr(basename(co.ndvi.gee), 1,
+            nchar(basename(co.ndvi.gee))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            te = c(as.vector(bbox(CO))), overwrite = TRUE)
+
+          gdalwarp(co.mir.gee[[i]], dstfile=paste0(path.gee, &quot;/&quot;, unique(substr(basename(co.mir.gee), 1,
+            nchar(basename(co.mir.gee))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            te = c(as.vector(bbox(CO))), overwrite = TRUE)
+
+          gdalwarp(co.lst.day.gee[[i]], dstfile=paste0(path.gee, &quot;/&quot;, unique(substr(basename(co.lst.day.gee), 1,
+            nchar(basename(co.lst.day.gee))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            te = c(as.vector(bbox(CO))), overwrite = TRUE)
+
+          gdalwarp(co.lst.night.gee[[i]], dstfile=paste0(path.gee, &quot;/&quot;, unique(substr(basename(co.lst.night.gee), 1,
+            nchar(basename(co.lst.night.gee))-4)), &quot;_proj&quot;, &quot;.tif&quot;), of = &quot;GTiff&quot;, s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            te = c(as.vector(bbox(CO))), overwrite = TRUE)
+
+co.ndvi.gee.proj &lt;- preStack(path = path.gee, pattern = &quot;.*CO_NDVI.*_proj&quot;)
+co.mir.gee.proj &lt;- preStack(path = path.gee, pattern = &quot;.*CO_MIR.*_proj&quot;)
+co.lst.day.gee.proj &lt;- preStack(path = path.gee, pattern = &quot;.*CO_LST_Day.*_proj&quot;)
+co.lst.night.gee.proj &lt;- preStack(path = path.gee, pattern = &quot;.*CO_LST_Night.*_proj&quot;)
+co.ndvi.gee.proj.brick &lt;- brick(co.ndvi.gee.proj)
+co.mir.gee.proj.brick &lt;- brick(co.mir.gee.proj)
+co.lst.day.gee.proj.brick &lt;- brick(co.lst.day.gee.proj)
+co.lst.night.gee.proj.brick &lt;- brick(co.lst.night.gee.proj)
+
+names(co.ndvi.gee.proj.brick) &lt;- c(&#39;NDVI_Jan_Mean&#39;,&#39;NDVI_Jan_Std&#39;,&#39;NDVI_Feb_Mean&#39;,&#39;NDVI_Feb_Std&#39;,&#39;NDVI_Mar_Mean&#39;,&#39;NDVI_Mar_Std&#39;,
+  &#39;NDVI_Apr_Mean&#39;,&#39;NDVI_Apr_Std&#39;,&#39;NDVI_May_Mean&#39;,&#39;NDVI_May_Std&#39;,&#39;NDVI_Jun_Mean&#39;,&#39;NDVI_Jun_Std&#39;,
+  &#39;NDVI_Jul_Mean&#39;,&#39;NDVI_Jul_Std&#39;,&#39;NDVI_Aug_Mean&#39;,&#39;NDVI_Aug_Std&#39;,&#39;NDVI_Sep_Mean&#39;,&#39;NDVI_Sep_Std&#39;,
+  &#39;NDVI_Oct_Mean&#39;,&#39;NDVI_Oct_Std&#39;,&#39;NDVI_Nov_Mean&#39;,&#39;NDVI_Nov_Std&#39;,&#39;NDVI_Dec_Mean&#39;,&#39;NDVI_Dec_Std&#39;)
+names(co.mir.gee.proj.brick) &lt;- c(&#39;MIR_Jan_Mean&#39;,&#39;MIR_Jan_Std&#39;,&#39;MIR_Feb_Mean&#39;,&#39;MIR_Feb_Std&#39;,&#39;MIR_Mar_Mean&#39;,&#39;MIR_Mar_Std&#39;,
+  &#39;MIR_Apr_Mean&#39;,&#39;MIR_Apr_Std&#39;,&#39;MIR_May_Mean&#39;,&#39;MIR_May_Std&#39;,&#39;MIR_Jun_Mean&#39;,&#39;MIR_Jun_Std&#39;,
+  &#39;MIR_Jul_Mean&#39;,&#39;MIR_Jul_Std&#39;,&#39;MIR_Aug_Mean&#39;,&#39;MIR_Aug_Std&#39;,&#39;MIR_Sep_Mean&#39;,&#39;MIR_Sep_Std&#39;,
+  &#39;MIR_Oct_Mean&#39;,&#39;MIR_Oct_Std&#39;,&#39;MIR_Nov_Mean&#39;,&#39;MIR_Nov_Std&#39;,&#39;MIR_Dec_Mean&#39;,&#39;MIR_Dec_Std&#39;)
+names(co.lst.day.gee.proj.brick) &lt;- c(&#39;LST_Day_Jan_Mean&#39;,&#39;LST_Day_Jan_Std&#39;,&#39;LST_Day_Feb_Mean&#39;,&#39;LST_Day_Feb_Std&#39;,&#39;LST_Day_Mar_Mean&#39;,&#39;LST_Day_Mar_Std&#39;,
+  &#39;LST_Day_Apr_Mean&#39;,&#39;LST_Day_Apr_Std&#39;,&#39;LST_Day_May_Mean&#39;,&#39;LST_Day_May_Std&#39;,&#39;LST_Day_Jun_Mean&#39;,&#39;LST_Day_Jun_Std&#39;,
+  &#39;LST_Day_Jul_Mean&#39;,&#39;LST_Day_Jul_Std&#39;,&#39;LST_Day_Aug_Mean&#39;,&#39;LST_Day_Aug_Std&#39;,&#39;LST_Day_Sep_Mean&#39;,&#39;LST_Day_Sep_Std&#39;,
+  &#39;LST_Day_Oct_Mean&#39;,&#39;LST_Day_Oct_Std&#39;,&#39;LST_Day_Nov_Mean&#39;,&#39;LST_Day_Nov_Std&#39;,&#39;LST_Day_Dec_Mean&#39;,&#39;LST_Day_Dec_Std&#39;)
+names(co.lst.night.gee.proj.brick) &lt;- c(&#39;LST_Night_Jan_Mean&#39;,&#39;LST_Night_Jan_Std&#39;,&#39;LST_Night_Feb_Mean&#39;,&#39;LST_Night_Feb_Std&#39;,&#39;LST_Night_Mar_Mean&#39;,&#39;LST_Night_Mar_Std&#39;,
+  &#39;LST_Night_Apr_Mean&#39;,&#39;LST_Night_Apr_Std&#39;,&#39;LST_Night_May_Mean&#39;,&#39;LST_Night_May_Std&#39;,&#39;LST_Night_Jun_Mean&#39;,&#39;LST_Night_Jun_Std&#39;,
+  &#39;LST_Night_Jul_Mean&#39;,&#39;LST_Night_Jul_Std&#39;,&#39;LST_Night_Aug_Mean&#39;,&#39;LST_Night_Aug_Std&#39;,&#39;LST_Night_Sep_Mean&#39;,&#39;LST_Night_Sep_Std&#39;,
+  &#39;LST_Night_Oct_Mean&#39;,&#39;LST_Night_Oct_Std&#39;,&#39;LST_Night_Nov_Mean&#39;,&#39;LST_Night_Nov_Std&#39;,&#39;LST_Night_Dec_Mean&#39;,&#39;LST_Night_Dec_Std&#39;)
+
+
+#---------- Write Raster Covariates by layer------------------------------------------------------------------
+setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO&quot;)
+writeRaster(co.ndvi.gee.proj.brick, filename = names(co.ndvi.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+writeRaster(co.mir.gee.proj.brick, filename = names(co.mir.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+writeRaster(co.lst.day.gee.proj.brick, filename = names(co.lst.day.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+writeRaster(co.lst.night.gee.proj.brick, filename = names(co.lst.night.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+
+setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM&quot;)
+writeRaster(nm.ndvi.gee.proj.brick, filename = names(nm.ndvi.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+writeRaster(nm.mir.gee.proj.brick, filename = names(nm.mir.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+writeRaster(nm.lst.day.gee.proj.brick, filename = names(nm.lst.day.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+writeRaster(nm.lst.night.gee.proj.brick, filename = names(nm.lst.night.gee.proj.brick), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)</code></pre>
+</div>
+<div id="process-landcover" class="section level2">
+<h2>Process Landcover</h2>
+<pre class="r"><code>#-----------------------------------------------------------------------------------------------------------
+#------Landcover classes
+# Water, Evergreen Needleleaf forest, Evergreen Broadleaf forest, Deciduous Needleleaf forest, Deciduous
+# Broadleaf forest, Mixed forest, Closed shrublands, Open shrublands, Woody savannas, Savannas, Grasslands,
+# Permanent wetlands, Croplands, Urban, Cropland/Natural vegetation mosaic, Snow and ice, Barren or
+# sparsely vegetated, Unclassified, Fill Value
+
+land.class &lt;- data.table(rbind(c(0, &quot;WA&quot;), c(1, &quot;ENF&quot;), c(2, &quot;EBF&quot;), c(3, &quot;DNF&quot;), c(4, &quot;DBF&quot;), c(5, &quot;MF&quot;),
+    c(6, &quot;CS&quot;), c(7, &quot;OS&quot;), c(8, &quot;WS&quot;), c(9, &quot;SA&quot;), c(10, &quot;GR&quot;), c(11, &quot;PW&quot;), c(12, &quot;CR&quot;), c(13, &quot;UR&quot;),
+    c(14, &quot;CNVM&quot;), c(15, &quot;SI&quot;), c(16, &quot;BSV&quot;), c(254, &quot;UN&quot;), c(255, &quot;FV&quot;)))
+
+names(land.class) &lt;- c(&quot;ID&quot;, &quot;Cover&quot;)
+land.class &lt;- data.frame(land.class)
+land.class$ID &lt;- as.numeric(land.class$ID)
+#-----------------------------------------------------------------------------------------------------------
+
+#Load in Landcover raster layer created in ESG_Mapping_CO_NM_MODIS_HyperTemp_Process.R script
+### Landcover Raster Layers
+co_landcover_raster.layer &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Landcover_500M/CO_landcover_layers.tif&quot;)
+names(co_landcover_raster.layer) &lt;- paste0(&quot;Cover_&quot;, land.class[, 2])
+
+nm_landcover_raster.layer &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Landcover_500M/NM_landcover_layers.tif&quot;)
+names(nm_landcover_raster.layer) &lt;- paste0(&quot;Cover_&quot;, land.class[, 2])
+
+setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO&quot;)
+writeRaster(co_landcover_raster.layer, filename = names(co_landcover_raster.layer), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM&quot;)
+writeRaster(nm_landcover_raster.layer, filename = names(nm_landcover_raster.layer), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)</code></pre>
+</div>
+<div id="load-in-hyper-temporal-imagery" class="section level2">
+<h2>Load in Hyper-temporal imagery</h2>
+<pre class="r"><code>CO_infill.ndvi &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_NDVI_infill.tif&quot;)
+CO_infill.evi &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_EVI_infill.tif&quot;)
+CO_infill.vi.red &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_RED_infill.tif&quot;)
+CO_infill.vi.swir2 &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_SWIR2_infill.tif&quot;)
+CO_LST_Day_infill &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Day_infill.tif&quot;)
+CO_LST_Night_infill &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Night_infill.tif&quot;)
+
+NM_infill.ndvi &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_NDVI_infill.tif&quot;)
+NM_infill.evi &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_EVI_infill.tif&quot;)
+NM_infill.vi.red &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_RED_infill.tif&quot;)
+NM_infill.vi.swir2 &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_SWIR2_infill.tif&quot;)
+NM_LST_Day_infill &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Day_infill.tif&quot;)
+NM_LST_Night_infill &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Night_infill.tif&quot;)
+
+#BRDF infill layers for CO and NM
+CO_SWIR1_infill &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR1_infill.tif&quot;)
+CO_SATVI_infill &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_SATVI_Infill.tif&quot;)
+NM_SWIR1_infill &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_SWIR1_infill.tif&quot;)
+NM_SATVI_infill &lt;- brick(&quot;/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_SATVI_Infill.tif&quot;)
+
+#set names
+hype.ndvi.names &lt;- paste0(&quot;NDVI&quot;, seq(1, 393, 1))
+hype.swir2.names &lt;- paste0(&quot;MIR&quot;, seq(1, 393, 1))
+hype.lst_day.names &lt;- paste0(&quot;LST_day&quot;, seq(1, 392, 1))
+hype.lst_night.names &lt;- paste0(&quot;LST_night&quot;, seq(1, 392, 1))
+
+rasterWritePar &lt;- function(s, name.list){
+foreach(i = 1:nlayers(s), .packages = c(&quot;raster&quot;)) %dopar% {
+  r &lt;- raster::raster(s, i)
+  raster::writeRaster(r, filename = name.list[i], bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+  rm(r)
+}}
+
+
+setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_hyper/CO&quot;)
+rasterWritePar(CO_infill.ndvi, hype.ndvi.names)
+rasterWritePar(CO_infill.vi.swir2, hype.swir2.names)
+rasterWritePar(CO_LST_Day_infill, hype.lst_day.names)
+rasterWritePar(CO_LST_Night_infill, hype.lst_night.names)
+
+setwd(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_hyper/NM&quot;)
+rasterWritePar(NM_infill.ndvi, hype.ndvi.names)
+rasterWritePar(NM_infill.vi.swir2, hype.swir2.names)
+rasterWritePar(NM_LST_Day_infill, hype.lst_day.names)
+rasterWritePar(NM_LST_Night_infill, hype.lst_night.names)
+
+#LST files were not previously masked with GDAL, while NDVI and MIR were. Mask LST layers
+co.hyper.path &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_hyper/CO&quot;
+co.hyper.premask.path &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_hyper/CO/premask&quot;
+co.hyper.premask &lt;- preStack(path = co.hyper.premask.path, pattern = &quot;.*.tif&quot;)
+co.hyper.premask.list &lt;- unstack(stack(co.hyper.premask, bands=1))
+
+foreach(i = 1:length(co.hyper.premask.list), .packages = c(&quot;raster&quot;), .export=c(&quot;fill.na&quot;, &quot;mask.fill&quot;)) %dopar% {
+    writeRaster(mask.fill(co.hyper.premask.list[[i]], CO_raster), filename = paste0(co.hyper.path, &quot;/&quot;, names(co.hyper.premask.list[[i]])), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+}
+
+nm.hyper.path &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_hyper/NM&quot;
+nm.hyper.premask.path &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_hyper/NM/premask&quot;
+nm.hyper.premask &lt;- preStack(path = nm.hyper.premask.path, pattern = &quot;.*.tif&quot;)
+nm.hyper.premask.list &lt;- unstack(stack(nm.hyper.premask, bands=1))
+
+foreach(i = 1:length(nm.hyper.premask.list), .packages = c(&quot;raster&quot;), .export=c(&quot;fill.na&quot;, &quot;mask.fill&quot;)) %dopar% {
+    writeRaster(mask.fill(nm.hyper.premask.list[[i]], NM_raster), filename = paste0(nm.hyper.path, &quot;/&quot;, names(nm.hyper.premask.list[[i]])), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+}
+
+#prestack hyper layers now that all have been masked
+co.hyper &lt;- preStack(path = co.hyper.path, pattern = &quot;.*.tif&quot;)
+nm.hyper &lt;- preStack(path = nm.hyper.path, pattern = &quot;.*.tif&quot;)</code></pre>
+</div>
+<div id="align-raster-covariate-extents-to-allow-stacking" class="section level2">
+<h2>Align Raster Covariate Extents to allow stacking</h2>
+<pre class="r"><code>#-------------------Functions for aligning extent, infilling and masking
+#Function to crop list of raster layers to common extent
+cFun &lt;- function(filelist, ext) {
+    imageStack &lt;- list()
+    for (i in 1:length(filelist)) {
+        imageStack[[i]] &lt;- crop(raster(filelist[i]), ext)
+    }
+    rs &lt;- stack(imageStack, quick = TRUE)
+    return(rs)
+}
+
+#Functions to fill missing values in incomplete raster covariate layers
+fill.na &lt;- function(x, i=13) {
+  if( is.na(x)[i] ) {
+    return( round(mean(x, na.rm=TRUE),0) )
+  } else {
+    return( round(x[i],0) )
+  }
+}
+
+mask.fill &lt;- function(raster, mask){
+   r.masked &lt;- mask(raster, mask, updatevalue = -9999, updateNA=FALSE)
+   r.masked[r.masked == -32768] &lt;- NA
+   if(cellStats(is.na(r.masked), sum) != 0){
+     r.masked.fill &lt;- focal(r.masked, w = matrix(1,5,5), fun = fill.na,
+            pad = TRUE, na.rm = FALSE, NAonly=TRUE)
+     if(cellStats(is.na(r.masked.fill), sum) != 0){
+       r.masked.fill2 &lt;- focal(r.masked.fill, w = matrix(1,5,5), fun = fill.na,
+            pad = TRUE, na.rm = FALSE, NAonly=TRUE)
+       r.masked.fill2[r.masked.fill2 &lt; -1000] &lt;- NA
+       return(r.masked.fill2)
+     } else {
+       r.masked.fill[r.masked.fill &lt; -1000] &lt;- NA
+       return(r.masked.fill) }
+   } else {
+     r.masked[r.masked &lt; -1000] &lt;- NA
+     return(r.masked) }
+}
+
+#--------------------------------------------------------------------------------------------
+##------------- CO ---------------------------------------------
+#Check that all covariate layers have common extent by creating stack
+co.wd &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO&quot;
+co.covariates &lt;- preStack(path = co.wd, pattern = &quot;.*.tif&quot;)
+co.covariates.stack &lt;- stack(co.covariates, bands=1)
+
+### ----------Fails to create stack----------------------
+## Need to crop all covariate layers to study boundary
+# create common extent for all covariate layers
+x0 &lt;- vector()
+x1 &lt;- vector()
+y0 &lt;- vector()
+y1 &lt;- vector()
+
+for (i in 1:length(co.covariates)) {
+    ex &lt;- extent(raster(co.covariates[[i]]))
+    x0[i] &lt;- ex[1]
+    x1[i] &lt;- ex[2]
+    y0[i] &lt;- ex[3]
+    y1[i] &lt;- ex[4]
+}
+extCommon &lt;- extent(max(x0), min(x1), max(y0), min(y1))
+
+# create common extent for entire study area
+co.covariates.extCommon &lt;- cFun(filelist = co.covariates, ext = extCommon)
+co.covariates.extCommon.list &lt;- unstack(co.covariates.extCommon)
+
+#files that were cropped to conform to new extent are saved in memory. Write out all files in memory back into covariate folder.
+foreach(i = 1:length(co.covariates.extCommon.list), .packages = c(&quot;raster&quot;)) %dopar% {
+  if(inMemory(co.covariates.extCommon.list[[i]])==TRUE){
+   writeRaster(co.covariates.extCommon.list[[i]], filename = paste0(co.wd, &quot;/&quot;, names(co.covariates.extCommon.list[[i]])), format=&quot;GTiff&quot;, overwrite=T)
+  }
+}
+
+co.covariates.list &lt;- unstack(stack(co.covariates, bands=1))
+
+#now we will mask all files and write back to original forlder.
+co.mask &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/CO_mask&quot;
+#now we will mask all files and write back to original forlder.
+foreach(i = 1:length(co.covariates.list), .packages = c(&quot;raster&quot;), .export=c(&quot;fill.na&quot;, &quot;mask.fill&quot;)) %dopar% {
+    writeRaster(mask.fill(co.covariates.list[[i]], CO_raster), filename = paste0(co.mask, &quot;/&quot;, names(co.covariates.list[[i]])), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+}
+
+co.covariates &lt;- preStack(path = co.mask, pattern = &quot;.*.tif&quot;)
+co.covariates &lt;- c(co.covariates, co.hyper)
+co.covariates.stack &lt;- stack(co.covariates)
+
+#--------------------------------------------------------------------------------------------------------------
+# NM #
+#Check that all covariate layers have common extent by creating stack
+nm.wd &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM&quot;
+nm.covariates &lt;- preStack(path = nm.wd, pattern = &quot;.*.tif&quot;)
+nm.covariates.stack &lt;- stack(nm.covariates, bands=1)
+
+### ----------Fails to create stack----------------------
+## Need to crop all covariate layers to study boundary
+# create common extent for all covariate layers
+x0 &lt;- vector()
+x1 &lt;- vector()
+y0 &lt;- vector()
+y1 &lt;- vector()
+
+for (i in 1:length(nm.covariates)) {
+    ex &lt;- extent(raster(nm.covariates[[i]]))
+    x0[i] &lt;- ex[1]
+    x1[i] &lt;- ex[2]
+    y0[i] &lt;- ex[3]
+    y1[i] &lt;- ex[4]
+}
+extCommon &lt;- extent(max(x0), min(x1), max(y0), min(y1))
+
+# create common extent for entire study area
+nm.covariates.extCommon &lt;- cFun(filelist = nm.covariates, ext = extCommon)
+nm.covariates.extCommon.list &lt;- unstack(nm.covariates.extCommon)
+
+#files that were cropped to conform to new extent are saved in memory. Write out all files in memory back into covariate folder.
+foreach(i = 1:length(nm.covariates.extCommon.list), .packages = c(&quot;raster&quot;)) %dopar% {
+  if(inMemory(nm.covariates.extCommon.list[[i]])==TRUE){
+   writeRaster(nm.covariates.extCommon.list[[i]], filename = paste0(nm.wd, &quot;/&quot;, names(nm.covariates.extCommon.list[[i]])), format=&quot;GTiff&quot;, overwrite=T)
+  }
+  }
+nm.covariates.list &lt;- unstack(stack(nm.covariates, bands=1))
+
+#now we will mask all files and write out to a new forlder.
+nm.mask &lt;- &quot;/data/data2/data/esgMapping/analysis/data/derived_data/raster_covariates/NM_mask&quot;
+
+#now we will mask all files and write back to original forlder.
+foreach(i = 1:length(nm.covariates.list), .packages = c(&quot;raster&quot;), .export=c(&quot;fill.na&quot;, &quot;mask.fill&quot;)) %dopar% {
+    writeRaster(mask.fill(nm.covariates.list[[i]], NM_raster), filename = paste0(nm.mask, &quot;/&quot;, names(nm.covariates.list[[i]])), bylayer=T, format=&quot;GTiff&quot;, overwrite=T)
+}
+
+nm.covariates &lt;- preStack(path = nm.mask, pattern = &quot;.*.tif&quot;)
+nm.covariates &lt;- c(nm.covariates, nm.hyper)
+nm.covariates.stack &lt;- stack(nm.covariates)</code></pre>
+</div>
+<div id="extract-point-data" class="section level2">
+<h2>Extract point data</h2>
+<pre class="r"><code>#----------------------- Extract Point Covariate Data  --------------------------------------------------------
+#extrating point from masked rasters causes ~110 points to contain NA values
+
+# Method to extract pixel stacks at point locations
+sfInit(parallel = TRUE, cpus = ncpus)
+sfExport(&quot;co.points&quot;, &quot;co.covariates&quot;, &quot;nm.points&quot;, &quot;nm.covariates&quot;)
+sfLibrary(raster)
+co.points.covariates &lt;- sfLapply(co.covariates, function(i){try( raster::extract(raster(i), co.points) )})
+nm.points.covariates &lt;- sfLapply(nm.covariates, function(i){try( raster::extract(raster(i), nm.points) )})
+sfStop()
+
+co.points.covariates &lt;- cbind(co.site_id, co.points.covariates)
+names(co.points.covariates) &lt;- c(names(co.site_id), names(co.covariates.stack))
+
+nm.points.covariates &lt;- cbind(nm.site_id, nm.points.covariates)
+names(nm.points.covariates) &lt;- c(names(nm.site_id), names(nm.covariates.stack))
+nm.points.covariates &lt;-nm.points.covariates[,-172:-175] #remove NAMrad data b/c large hole over White Sands.
+
+co.spatial.points.cov &lt;- co.points
+co.spatial.points.cov@data &lt;- co.points.covariates
+nm.spatial.points.cov &lt;- nm.points
+nm.spatial.points.cov@data &lt;- nm.points.covariates
+
+#identity rows that contain missing values
+co.na.index &lt;- unique(as.data.frame(which(is.na(co.spatial.points.cov@data), arr.ind = TRUE))[, 1])
+co.spatial.points.cov &lt;- co.spatial.points.cov[-co.na.index, ]
+nm.na.index &lt;- unique(as.data.frame(which(is.na(nm.spatial.points.cov@data), arr.ind = TRUE))[, 1])
+nm.spatial.points.cov &lt;- nm.spatial.points.cov[-nm.na.index, ]
+
+writeOGR(co.spatial.points.cov, dsn=&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/&quot;, layer=&quot;CO_points_cov_vals&quot;, driver=&quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)
+writeOGR(nm.spatial.points.cov, dsn=&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/&quot;, layer=&quot;NM_points_cov_vals&quot;, driver=&quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)
+
+#update point covariate data.tables to remove points with NAs
+co.points.covariates &lt;- co.spatial.points.cov@data
+nm.points.covariates &lt;- nm.spatial.points.cov@data
+write.table(co.points.covariates, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/tables/CO_points_covariate_values.txt&quot;, sep = &quot;\t&quot;, row.names = FALSE)
+write.table(nm.points.covariates, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/tables/NM_points_covariate_values.txt&quot;, sep = &quot;\t&quot;, row.names = FALSE)
+
+#----------------list dataset names-------------------------------------
+#Terrain
+terrain.co.names
+terrain.nm.names
+#lithology
+lithology.co.names &lt;- names(co_litho_raster.layer)
+lithology.nm.names &lt;- names(nm_litho_raster.layer)
+#wclim
+prec.co.names &lt;- names(co.prec.stack)
+temp.co.names &lt;- names(co.temp.stack)
+bio.co.names &lt;- names(co.bio.stack)
+prec.nm.names &lt;- names(nm.prec.stack)
+temp.nm.names &lt;- names(nm.temp.stack)
+bio.nm.names &lt;- names(nm.bio.stack)
+#NAMrad
+namrad.co.names &lt;- names(co.namrad.stack)
+#Soil thickness
+soil.thick.co.names &lt;- names(CO_soil_thick)
+soil.thick.nm.names &lt;- names(NM_soil_thick)
+#soilGrids
+soilGrids.co.names &lt;-  var.name
+soilGrids.nm.names &lt;-  var.name
+#GEE
+ndvi.co.names &lt;-  names(co.ndvi.gee.proj.brick)
+mir.co.names &lt;-  names(co.mir.gee.proj.brick)
+lst.day.co.names &lt;-  names(co.lst.day.gee.proj.brick)
+lst.night.co.names &lt;-  names(co.lst.night.gee.proj.brick)
+ndvi.nm.names &lt;-  names(nm.ndvi.gee.proj.brick)
+mir.nm.names &lt;-  names(nm.mir.gee.proj.brick)
+lst.day.nm.names &lt;-  names(nm.lst.day.gee.proj.brick)
+lst.night.nm.names &lt;-  names(nm.lst.night.gee.proj.brick)
+#hyper
+hype.ndvi.names &lt;- paste0(&quot;NDVI&quot;, seq(1, 393, 1))
+hype.swir2.names &lt;- paste0(&quot;MIR&quot;, seq(1, 393, 1))
+hype.lst_day.names &lt;- paste0(&quot;LST_day&quot;, seq(1, 392, 1))
+hype.lst_night.names &lt;- paste0(&quot;LST_night&quot;, seq(1, 392, 1))
+
+save( terrain.co.names, lithology.co.names, prec.co.names, temp.co.names, bio.co.names, namrad.co.names, soil.thick.co.names, soilGrids.co.names, ndvi.co.names, mir.co.names, lst.day.co.names, lst.night.co.names, hype.ndvi.names, hype.swir2.names, hype.lst_day.names, hype.lst_night.names, file = &quot;/data/data2/data/esgMapping/R/co_covariate_names.Rdata&quot;)
+
+save( terrain.nm.names, lithology.nm.names, prec.nm.names, temp.nm.names, bio.nm.names, soil.thick.nm.names, soilGrids.nm.names, ndvi.nm.names, mir.nm.names, lst.day.nm.names, lst.night.nm.names, hype.ndvi.names, hype.swir2.names, hype.lst_day.names, hype.lst_night.names, file = &quot;/data/data2/data/esgMapping/R/nm_covariate_names.Rdata&quot;)
+#------------------------------------------------------------------------------
+
+
+#---------------External Cross-validation-------------------------------------------
+## CO validation points
+NM_cleaned_val_points &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/JRN_Validation_Data&quot;,
+    layer = &quot;CleanedValidationData&quot;)
+NM_JRN_val_points &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/JRN_Validation_Data&quot;,
+    layer = &quot;JRN_esite_point_unique&quot;)
+
+nm.lookup &lt;- read.csv(&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/MLRA42_NASIS_ESG_lookup.csv&quot;,
+    header = T)
+nm.lookup &lt;- nm.lookup[, c(1, 2, 6, 7)]
+nm.lookup &lt;- nm.lookup[!duplicated(nm.lookup), ]
+
+NM_JRN_val_points.data &lt;- NM_JRN_val_points@data
+colnames(NM_JRN_val_points.data)[1] &lt;- &quot;Caiti_ecosites&quot;
+NM_JRN_val_points.data &lt;- join(NM_JRN_val_points.data, nm.lookup, type = &quot;inner&quot;)
+colnames(NM_JRN_val_points.data)[6] &lt;- &quot;Group&quot;
+NM_JRN_val_points@data &lt;- NM_JRN_val_points.data
+
+NM_val1 &lt;- NM_JRN_val_points
+NM_val1.data &lt;- data.frame(NM_JRN_val_points@data$Group)
+colnames(NM_val1.data) &lt;- &quot;Group&quot;
+NM_val1@data &lt;- NM_val1.data
+
+NM_val2 &lt;- NM_cleaned_val_points
+NM_val2.data &lt;- data.frame(NM_cleaned_val_points@data$Group)
+colnames(NM_val2.data) &lt;- &quot;Group&quot;
+NM_val2@data &lt;- NM_val2.data
+
+NM_Validation_Final &lt;- spTransform(spRbind(NM_val1, NM_val2), crs(NM))
+writeOGR(NM_Validation_Final , dsn=&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/&quot;, layer=&quot;NM_ext_valid_points&quot;, driver=&quot;ESRI Shapefile&quot;)
+nm_val.site_id &lt;- paste0(&quot;ES&quot;, NM_Validation_Final$Group)
+#----------------------------------------------------
+## CO validation points
+CO_Validation_Final &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/COPlat_Val_data&quot;,
+    layer = &quot;Miller_plots_trim_ESGs&quot;)
+writeOGR(CO_Validation_Final , dsn=&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/&quot;, layer=&quot;CO_ext_valid_points&quot;, driver=&quot;ESRI Shapefile&quot;)
+co_val.site_id &lt;- paste0(&quot;ES&quot;, CO_Validation_Final$ESG_number)
+#----------------------------------------------------
+
+#Extract covariate data at external validation sites
+sfInit(parallel = TRUE, cpus = ncpus)
+sfExport(&quot;CO_Validation_Final&quot;, &quot;co.covariates&quot;, &quot;NM_Validation_Final&quot;, &quot;nm.covariates&quot;)
+sfLibrary(raster)
+co.validation.points.covariates.extract &lt;- sfLapply(co.covariates, function(i){try( raster::extract(raster(i), CO_Validation_Final) )})
+nm.validation.points.covariates.extract &lt;- sfLapply(nm.covariates, function(i){try( raster::extract(raster(i), NM_Validation_Final) )})
+#sfStop()
+co.validation.points.covariates &lt;-  co.validation.points.covariates.extract
+nm.validation.points.covariates &lt;- nm.validation.points.covariates.extract
+#create esite df with site index for validation datasets
+co_val.site_id &lt;- data.frame(seq(1,length(co_val.site_id),1), as.factor(co_val.site_id))
+names(co_val.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
+
+nm_val.site_id &lt;- data.frame(seq(1,length(nm_val.site_id),1),as.factor(nm_val.site_id))
+names(nm_val.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
+
+co.validation.points.covariates &lt;- cbind(co_val.site_id, co.validation.points.covariates)
+names(co.validation.points.covariates) &lt;- c(names(co_val.site_id), names(co.covariates.stack))
+
+nm.validation.points.covariates &lt;- cbind(nm_val.site_id, nm.validation.points.covariates)
+names(nm.validation.points.covariates) &lt;- c(names(nm_val.site_id), names(nm.covariates.stack))
+nm.validation.points.covariates &lt;-nm.validation.points.covariates[,-172:-175] #remove NAMrad data b/c large hole over White Sands.
+
+#identity rows that contain missing values
+co.val.na.index &lt;- unique(as.data.frame(which(is.na(co.validation.points.covariates), arr.ind = TRUE))[, 1])
+co.validation.points.covariates.narm &lt;- co.validation.points.covariates[-co.val.na.index, ]
+nm.val.na.index &lt;- unique(as.data.frame(which(is.na(nm.validation.points.covariates), arr.ind = TRUE))[, 1])
+nm.validation.points.covariates.narm &lt;- nm.validation.points.covariates[-nm.val.na.index, ]
+
+write.table(co.validation.points.covariates, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/tables/CO_validation_points_covariate_values.txt&quot;, sep = &quot;\t&quot;, row.names = FALSE)
+write.table(nm.validation.points.covariates.narm, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/tables/NM_validation_points_covariate_values.txt&quot;, sep = &quot;\t&quot;, row.names = FALSE)
+
+
+#Spatial point data
+co.spatial.validation.points.cov &lt;- CO_Validation_Final
+co.spatial.validation.points.cov@data &lt;- co.validation.points.covariates
+nm.spatial.validation.points.cov &lt;- NM_Validation_Final
+nm.spatial.validation.points.cov@data &lt;- nm.validation.points.covariates
+
+#identity rows that contain missing values
+co.val.na.index &lt;- unique(as.data.frame(which(is.na(co.spatial.validation.points.cov@data), arr.ind = TRUE))[, 1])
+#co.spatial.validation.points.cov &lt;- co.spatial.points.cov[-co.val.na.index, ]
+nm.val.na.index &lt;- unique(as.data.frame(which(is.na(nm.spatial.validation.points.cov@data), arr.ind = TRUE))[, 1])
+nm.spatial.validation.points.cov &lt;- nm.spatial.validation.points.cov[-nm.val.na.index, ]
+
+writeOGR(co.spatial.validation.points.cov , dsn=&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/&quot;, layer=&quot;CO_points_cov_vals&quot;, driver=&quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)
+writeOGR(nm.spatial.validation.points.cov , dsn=&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/&quot;, layer=&quot;NM_points_cov_vals&quot;, driver=&quot;ESRI Shapefile&quot;, overwrite_layer = TRUE)</code></pre>
+<pre class="r"><code>#-------------------------------------------------------------------------------------------------------------------------
+#Output data for modeling steps
+save(co.points.covariates,co.spatial.points.cov, co.validation.points.covariates, co.spatial.validation.points.cov, co.covariates.stack, file = &quot;/data/data2/data/esgMapping/R/CO_ESG_modeling_data.Rdata&quot;)
+
+save(nm.points.covariates,nm.spatial.points.cov, nm.validation.points.covariates.narm, nm.spatial.validation.points.cov, nm.covariates.stack, file = &quot;/data/data2/data/esgMapping/R/NM_ESG_modeling_data.Rdata&quot;)
+
+###############################################################################################################
+save.image(&quot;/data/data2/data/esgMapping/R/CO_NM_Ecosite_covariate_process.RData&quot;)
+load(&quot;/data/data2/data/esgMapping/R/CO_NM_Ecosite_covariate_process.RData&quot;)
+###############################################################################################################</code></pre>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.5.2 (2018-12-20)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 7 x64 (build 7601) Service Pack 1
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+loaded via a namespace (and not attached):
+ [1] workflowr_1.3.0   Rcpp_1.0.1        digest_0.6.19    
+ [4] rprojroot_1.3-2   backports_1.1.4   git2r_0.25.2.9000
+ [7] magrittr_1.5      evaluate_0.13     stringi_1.4.3    
+[10] fs_1.2.7          whisker_0.3-2     rmarkdown_1.12   
+[13] tools_3.5.2       stringr_1.4.0     glue_1.3.1       
+[16] xfun_0.6          yaml_2.2.0        compiler_3.5.2   
+[19] htmltools_0.3.6   knitr_1.23       </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
