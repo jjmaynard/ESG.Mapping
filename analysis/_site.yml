@@ -6,7 +6,11 @@ navbar:
   - text: Overview
     href: index.html
   - text: Code
-    href: code.html
+    menu:
+      - text: "Code Sections"
+        href: code.html
+      - text: "Covariate Processing"
+        href: ESG_Covariate_Processing.html
   - text: Data
     href: data.html
   - text: License
