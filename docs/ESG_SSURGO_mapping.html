@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Jonathan Maynard" />
+
+
+<title>ESG SSURGO Processing</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Ecological Site Mapping</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Overview</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Code
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="code.html">Modeling Steps</a>
+    </li>
+    <li>
+      <a href="ESG_Covariate_Processing.html">1. Covariate Processing</a>
+    </li>
+    <li>
+      <a href="ESG_HyperTemp_Image_Processing.html">2. Hyper-temporal RS-Image Processing</a>
+    </li>
+    <li>
+      <a href="ESG_MLR_Modeling.html">3. Modeling, Prediction and Validation</a>
+    </li>
+    <li>
+      <a href="ESG_SSURGO_mapping.html">4. Mapping SSURGO ESGs</a>
+    </li>
+  </ul>
+</li>
+<li>
+  <a href="data.html">Data</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/jjmaynard/ESG.Mapping">
+    <span class="fa fa-github"></span>
+     
+    Git Repository
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">ESG SSURGO Processing</h1>
+<h4 class="author">Jonathan Maynard</h4>
+<h4 class="date">Feb 10, 2017</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2019-05-31
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ESG.Mapping/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.3.0). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20190528code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20190528)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20190528code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20190528)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree395e3d515c27ea2e366c1d3d934ab6e151fb7a08targetblank395e3d5a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/395e3d515c27ea2e366c1d3d934ab6e151fb7a08" target="_blank">395e3d5</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree395e3d515c27ea2e366c1d3d934ab6e151fb7a08targetblank395e3d5a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/raw_data/
+    Ignored:    manuscript/figures/
+    Ignored:    proj_setup/
+
+Untracked files:
+    Untracked:  data/derived_data/vector/
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the R Markdown and HTML files. If you’ve configured a remote Git repository (see <code>?wflow_git_remote</code>), click on the hyperlinks in the table below to view them.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/jjmaynard/ESG.Mapping/blob/395e3d515c27ea2e366c1d3d934ab6e151fb7a08/analysis/ESG_SSURGO_mapping.Rmd" target="_blank">395e3d5</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-05-31
+</td>
+<td>
+ESG SSURGO Mapping
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div id="this-notebook-processes-and-plots-ssurgo-derived-esg-maps-based-on-the-esg-class-associated-with-the-dominant-component-within-each-soil-map-unit.-ssurgo-ecological-site-and-smu-component-data-were-downloaded-from-soildataaccess-accessed-12-oct.-2017-merged-based-on-the-representative-component-percentage-for-each-smu-and-aggregated-by-dominant-condition.-in-rare-cases-0.5-where-multiple-ecological-site-concepts-resulted-in-equal-representative-percentages-within-a-smu-esd-selection-was-based-on-consulting-local-soil-survey-office-and-analysis-of-correlated-minor-components.-the-esd-esg-look-up-tables-developed-the-ecological-site-grouping-workshops-were-then-used-to-assign-the-appropriate-esg-group-to-each-smu-ecologi-cal-site-class." class="section level4">
+<h4>This notebook processes and plots SSURGO-derived ESG maps based on the ESG class associated with the dominant component within each soil map unit. SSURGO ecological site and SMU component data were downloaded from SoilDataAccess (Accessed 12 Oct. 2017), merged based on the representative component percentage for each SMU, and aggregated by dominant condition. In rare cases (&lt;0.5%) where multiple ecological site concepts resulted in equal representative percentages within a SMU, ESD selection was based on consulting local soil survey office and analysis of correlated minor components. The ESD-ESG look-up tables developed the Ecological Site Grouping workshops were then used to assign the appropriate ESG group to each SMU ecologi-cal site class.</h4>
+<pre class="r"><code>required.packages &lt;- c(&quot;here&quot;, &quot;doParallel&quot;,&quot;foreach&quot;,&quot;dplyr&quot;,&quot;tidyr&quot;,&quot;soilDB&quot;,&quot;rgeos&quot;,&quot;sp&quot;,&quot;raster&quot;,&quot;maps&quot;,&quot;rgdal&quot;,&quot;sf&quot;,&quot;ggplot2&quot;,&quot;rasterVis&quot;)
+new.packages &lt;- required.packages[!(required.packages %in% installed.packages()[,&quot;Package&quot;])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(required.packages, require, character.only=T)
+rm(required.packages, new.packages)
+
+
+no_cores &lt;- detectCores() - 1  
+cl &lt;- makeCluster(no_cores, type=&quot;SOCK&quot;, outfile = &quot;&quot;)  
+registerDoParallel(cl)  
+getDoParWorkers()</code></pre>
+<pre class="r"><code>#Study areas
+NM &lt;- readOGR(dsn=&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area&quot;,layer=&quot;Chihauhuan_Study_Area_Boundary&quot;)
+CO &lt;- readOGR(dsn=&quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area&quot;,layer=&quot;epaL4_mlra35sel_bndc&quot;)
+#Load in NASIS training points
+co.points &lt;- readOGR(dsn = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data&quot;, layer = &quot;CO_points_final&quot;)
+nm.points &lt;- readOGR(dsn = &quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data&quot;, layer = &quot;NM_points_final&quot;)
+# ESG lookup key
+unique(co.points@data[10:11])
+unique(nm.points@data[14:15])
+
+#Read in MLRA 42 SMU list
+mlra42_esg &lt;- read.csv(&#39;/data/data2/mlra42-esg.csv&#39;)
+SMU_list &lt;- mlra42_esg$mukey
+
+#set number of SMU per query to 50
+x &lt;- seq(1,length(SMU_list), 50)
+y &lt;- seq(50,length(SMU_list), 50)
+y[length(y)] &lt;- length(SMU_list)
+x &lt;- x[-length(x)]
+#This works but throws an error when a very large SMU is present. Therefore requires limiting the number of SMUs, i.e., 2 or less
+SMU_geo &lt;- list()
+SMU_geo &lt;- foreach(i=1:length(x), .packages = c(&quot;soilDB&quot;, &quot;purrr&quot;)) %dopar% {
+  #for(i in 1:3){
+  tryCatch({
+  SMU_geo[[i]] &lt;- SDA_query(paste0(&quot;select G.MupolygonWktWgs84 as geom, mapunit.mukey, muname
+  FROM mapunit
+    CROSS APPLY SDA_Get_MupolygonWktWgs84_from_Mukey(mapunit.mukey) as G
+    WHERE mukey IN (&#39;&quot;, paste0(SMU_list[x[i]:y[i]-1], sep=&quot;&#39;, &#39;&quot;, collapse=&quot;&quot;), SMU_list[y[i]],&quot;&#39;)&quot;))
+  }, error=function(e){cat(&quot;ERROR :&quot;,conditionMessage(e), &quot;\n&quot;)})
+}
+
+SMU_geo.all &lt;- bind_rows(SMU_geo)
+saveRDS(SMU_geo.all, &quot;MLRA_42_SMU1.rds&quot;)
+length(unique(SMU_geo.all$mukey))
+length(SMU_list)
+missing &lt;- match(SMU_list, unique(SMU_geo.all$mukey), nomatch=NA)
+SMU_list_rerun &lt;- SMU_list[which(is.na(missing))]
+#rm(SMU_geo.all)
+#set number of SMU per query to 1
+x &lt;- seq(1,length(SMU_list_rerun), 10)
+y &lt;- seq(10,length(SMU_list_rerun), 10)
+y[length(y)] &lt;- length(SMU_list_rerun)
+x &lt;- x[-length(x)]
+#This works but throws an error when a very large SMU is present. Therefore requires limiting the number of SMUs, i.e., 2 or less
+SMU_geo2 &lt;- list()
+SMU_geo2 &lt;- foreach(i=1:length(x), .packages = c(&quot;soilDB&quot;)) %dopar% {
+  #for(i in 1:3){
+  tryCatch({
+    SMU_geo2[[i]] &lt;- SDA_query(paste0(&quot;select G.MupolygonWktWgs84 as geom, mapunit.mukey, muname
+      FROM mapunit
+      CROSS APPLY SDA_Get_MupolygonWktWgs84_from_Mukey(mapunit.mukey) as G
+      WHERE mukey IN (&#39;&quot;, paste0(SMU_list_rerun[x[i]:y[i]-1], sep=&quot;&#39;, &#39;&quot;, collapse=&quot;&quot;), SMU_list_rerun[y[i]],&quot;&#39;)&quot;))
+  }, error=function(e){cat(&quot;ERROR :&quot;,conditionMessage(e), &quot;\n&quot;)})
+  }
+
+#SMU_geo.all &lt;- readRDS(&quot;SMU_geo_all1.rds&quot;)
+SMU_geo.all &lt;- bind_rows(SMU_geo.all, SMU_geo2)
+saveRDS(SMU_geo.all, &quot;MLRA_42_SMU2.rds&quot;)
+missing2 &lt;- match(SMU_list, unique(SMU_geo.all$mukey), nomatch=NA)
+SMU_list_rerun2 &lt;- SMU_list[which(is.na(missing2))]
+#rm(SMU_geo.all)
+
+x &lt;- seq(1,length(SMU_list_rerun2), 1)
+y &lt;- seq(1,length(SMU_list_rerun2), 1)
+
+SMU_geo3 &lt;- list()
+SMU_geo3 &lt;- foreach(i=1:length(SMU_list_rerun2), .packages = c(&quot;soilDB&quot;)) %dopar% {
+  #for(i in 1:3){
+  tryCatch({
+    SMU_geo3[[i]] &lt;- SDA_query(paste0(&quot;select G.MupolygonWktWgs84 as geom, mapunit.mukey, muname
+      FROM mapunit
+      CROSS APPLY SDA_Get_MupolygonWktWgs84_from_Mukey(mapunit.mukey) as G
+      WHERE mukey IN (&#39;&quot;, paste0(SMU_list_rerun2[x[i]:y[i]-1], sep=&quot;&#39;, &#39;&quot;, collapse=&quot;&quot;), SMU_list_rerun2[y[i]],&quot;&#39;)&quot;))
+  }, error=function(e){cat(&quot;ERROR :&quot;,conditionMessage(e), &quot;\n&quot;)})
+}
+#SMU_geo.all &lt;- readRDS(&quot;SMU_geo_all2.rds&quot;)
+SMU_geo.all &lt;- bind_rows(SMU_geo.all, SMU_geo3)
+saveRDS(SMU_geo.all, &quot;MLRA_42_SMU2.rds&quot;)
+
+mu.unique &lt;- unique(SMU_geo.all$mukey)
+
+save.image(&quot;SSURGO_MLRA_42.RData&quot;)
+SMU_geo.proc &lt;- processSDA_WKT(SMU_geo.all)
+
+writeOGR(SMU_geo.proc, dsn=&#39;.&#39;, layer=&quot;SMU_geo.proc&quot;, driver=&quot;ESRI Shapefile&quot;, overwrite_layer=TRUE)
+
+# Color palette used in rangelands article
+cbPalette &lt;- c(&quot;#00a884&quot;, &quot;#beffe7&quot;, &quot;#ffa77f&quot;, &quot;#ffffbf&quot;, &quot;#737301&quot;, &quot;#fe0000&quot;, &quot;#0071fe&quot;, &quot;#732500&quot;)
+
+SMU_geo.proc.sf &lt;- SMU_geo.proc %&gt;%
+                     st_as_sf() %&gt;% 
+                     st_transform(st_crs(NM.sf))
+SMU_geo.proc.sf$Area &lt;- st_area(SMU_geo.proc.sf)
+
+NM.sf &lt;- NM %&gt;% st_as_sf()
+mlra42_ssurgo_esg &lt;- SMU_geo.proc %&gt;%
+                     st_as_sf() %&gt;% 
+                     st_transform(st_crs(NM.sf)) %&gt;% 
+                     st_intersection(NM.sf)  %&gt;%
+                     left_join(mlra42_esg, by=&quot;mukey&quot;) 
+
+mlra42_ssurgo_esg$GroupName = factor(mlra42_ssurgo_esg$GroupName,levels(mlra42_ssurgo_esg$GroupName)[c(7,3,6,4,1,5,2)])
+st_write(mlra42_ssurgo_esg, &quot;/data/data2/data/esgMapping/analysis/data/derived_data/SSURGO_ESG/mlra42_ssurgo_esg.shp&quot;)
+
+mlra42_ssurgo_esg$Area &lt;- st_area(mlra42_ssurgo_esg)
+area &lt;- mlra42_ssurgo_esg$Area
+describe(data.frame(as.numeric(area)))
+quantile(mlra42_ssurgo_esg$Area, c(.99, .05, .01, .005))
+
+sub &lt;- SMU_geo.proc.sf %&gt;% filter(Area&lt;quantile(mlra42_ssurgo_esg$Area,.005))
+
+#cbPalette &lt;- c(&#39;#00a884&#39;,&#39;#beffe7&#39;,&#39;#ffa77f&#39;,&#39;#ffffbf&#39;,&#39;#737301&#39;,&#39;#fe0000&#39;,&#39;#0071fe&#39;,&#39;#732500&#39;)
+
+#create fishnet grid to underlay polygon map
+# make an object the size and shape of the output you want
+NM.sf &lt;- NM %&gt;% st_as_sf()
+NM_bb &lt;- matrix(c(-1213894.1,  1307347.4,
+                      -737762.7,  1307347.4,
+                      -737762.7, 768173.3,
+                     -1213894.1, 768173.3,
+                     -1213894.1,  1307347.4), byrow = TRUE, ncol = 2) %&gt;%
+  list() %&gt;% 
+  st_polygon() %&gt;% 
+  st_sfc(., crs = st_crs(NM.sf))
+
+# Grid 
+NM_grid &lt;- st_make_grid(NM_bb, n = c(60, 60),
+                                 crs = st_crs(NM), what = &#39;polygons&#39;)  %&gt;%
+  st_sf(&#39;geometry&#39; = ., data.frame(&#39;ID&#39; = 1:length(.))) %&gt;%
+   st_intersection(NM.sf)
+plot(NM_grid)
+
+cbPalette &lt;- c(&#39;#8c510a&#39;, &#39;#bf812d&#39;, &#39;#dfc27d&#39;, &#39;#f6e8c3&#39;, &#39;#c7eae5&#39;, &#39;#5ab4ac&#39;, &#39;#01665e&#39;)
+mlra42_ssurgo_esg.plot &lt;- ggplot() + 
+  geom_sf(data = NM_grid, fill=NA, show.legend=F, color=&quot;black&quot;, lwd = 0.4) +
+  geom_sf(data = mlra42_ssurgo_esg, aes(fill = factor(GroupName)), color=NA) +
+  coord_sf(datum = st_crs(mlra42_ssurgo_esg))+ labs(x = &quot;Long&quot;, y = &quot;Lat&quot;, fill = &quot;ESG&quot;) +
+  ggtitle(&quot;Ecological Site Group&quot;) +scale_fill_manual(values=cbPalette)
+#mlra42_ssurgo_esg.plot
+
+ggsave(mlra42_ssurgo_esg.plot, file = &quot;/data/data2/data/esgMapping/analysis/figures/NM_ssurgo_esg_plot.pdf&quot;, width = 6, height = 6)
+ggsave(mlra42_ssurgo_esg.plot, file = &quot;/data/data2/data/esgMapping/analysis/figures/NM_ssurgo_esg_plot.png&quot;, width = 6, height = 6, type = &quot;cairo-png&quot;)
+
+
+# MLRA SSURGO ESG
+mlra35_ssurgo_esg &lt;- st_read(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/SSURGO_ESG/CO_Plat_SSURGO_ESGs/SSURGO_ESGs_UT_MLRA35.shp&quot;, quiet = TRUE)
+mlra35_ssurgo_esg$Name = factor(mlra35_ssurgo_esg$Name,levels(mlra35_ssurgo_esg$Name)[c(5,6,8,7,3,4,1,2)])
+mlra35_ssurgo_esg$Area &lt;- st_area(mlra35_ssurgo_esg)
+quantile(mlra35_ssurgo_esg$Area, c(.99, .05, .01, .005))
+summary(mlra35_ssurgo_esg$Area)
+# make an object the size and shape of the output you want
+CO.sf &lt;- CO %&gt;% st_as_sf()
+CO_bb &lt;- matrix(c(-1553413,  1952277,
+                      -1110609,  1952277,
+                      -1110609, 1629234,
+                     -1553413, 1629234,
+                     -1553413,  1952277), byrow = TRUE, ncol = 2) %&gt;%
+  list() %&gt;% 
+  st_polygon() %&gt;% 
+  st_sfc(., crs = st_crs(CO.sf))
+
+#Grid 
+CO_grid &lt;- st_make_grid(CO_bb, n = c(60, 60),
+                                 crs = st_crs(CO), what = &#39;polygons&#39;)  %&gt;%
+  st_sf(&#39;geometry&#39; = ., data.frame(&#39;ID&#39; = 1:length(.))) %&gt;%
+   st_intersection(CO.sf)
+plot(CO_grid_20x10)
+#palette for mlra 35 with factor levels: [1] &quot;Bottoms and flats&quot;, &quot;Deep rocky&quot;, &quot;Finer shrublands&quot;, &quot;Outcrops and slopes&quot;, &quot;Saline hills and badlands&quot;, &quot;Saline uplands and flats&quot;, &quot;Sandy grasslands and shrublands&quot;, &quot;Shallow shrublands and woodlands&quot;
+#cbPalette &lt;- c(&#39;#0071fe&#39;,&#39;#732500&#39;,&#39;#737301&#39;,&#39;#fe0000&#39;,&#39;#00a884&#39;,&#39;#beffe7&#39;,&#39;#ffffbf&#39;,&#39;#ffa77f&#39;)
+cbPalette &lt;- c(&#39;#8c510a&#39;, &#39;#bf812d&#39;, &#39;#dfc27d&#39;, &#39;#f6e8c3&#39;, &#39;#c7eae5&#39;, &#39;#80cdc1&#39;, &#39;#35978f&#39;, &#39;#01665e&#39;)
+
+mlra35_ssurgo_esg.plot &lt;- ggplot() + 
+  geom_sf(data = CO_grid, fill=NA, show.legend=F, color=&quot;black&quot;, lwd = 0.4) +
+  geom_sf(data = mlra35_ssurgo_esg, aes(fill = factor(Name)), color=NA) +
+ coord_sf(datum = st_crs(mlra35_ssurgo_esg)) + labs(x = &quot;Long&quot;, y = &quot;Lat&quot;, fill = &quot;ESG&quot;) +
+  ggtitle(&quot;Ecological Site Group&quot;) +scale_fill_manual(values=cbPalette)
+#mlra35_ssurgo_esg.plot
+
+ggsave(mlra35_ssurgo_esg.plot, file = &quot;/data/data2/data/esgMapping/analysis/figures/CO_ssurgo_esg_plot.pdf&quot;, width = 6, height = 6)
+ggsave(mlra35_ssurgo_esg.plot, file = &quot;/data/data2/data/esgMapping/analysis/figures/CO_ssurgo_esg_plot.png&quot;, width = 6, height = 6, type = &quot;cairo-png&quot;)
+
+
+save.image(&quot;/data/data2/data/esgMapping/R/CO_NM_ESG_SSURGO.RData&quot;)
+load(&quot;/data/data2/data/esgMapping/R/CO_NM_ESG_SSURGO.RData&quot;)
+
+#Extract cross validation and external validation points from SSURGO polygons
+
+
+
+CO.training.points &lt;- st_as_sf(co.points) %&gt;% dplyr::select(c(&quot;esdname&quot;, &quot;ESG_number&quot;, &quot;ESG_Name&quot;, &quot;ESG_ID&quot;))
+NM.training.points &lt;- st_as_sf(nm.points) %&gt;% dplyr::select(c(&quot;esd_unique&quot;, &quot;ESG&quot;, &quot;Name&quot;))
+CO_Validation_Final &lt;- st_read(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/CO_ext_valid_points.shp&quot;) %&gt;% st_transform(st_crs(CO.training.points)) %&gt;% dplyr::select(c(ESG_number_val=&quot;ESG_number&quot;, esd_unique_val=&quot;esd_unique&quot;))
+NM_Validation_Final &lt;- st_read(&quot;/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/NM_ext_valid_points.shp&quot;) %&gt;% st_transform(st_crs(NM.training.points)) %&gt;% dplyr::select(ESG_number_val=&quot;Group&quot;)
+NM_Validation_Final &lt;- NM_Validation_Final[-setdiff(seq(1:1427), nm.validation.points.covariates$Index),]
+mlra35_ssurgo_esg.sf &lt;- st_as_sf(mlra35_ssurgo_esg) %&gt;% st_transform(st_crs(CO.training.points)) %&gt;% dplyr::select(c(esd_ssurgo=&quot;esd_unique&quot;, ESG_ssurgo=&quot;ESG&quot;, Name_ssurgo=&quot;Name&quot;))
+mlra42_ssurgo_esg.sf &lt;- st_as_sf(mlra42_ssurgo_esg) %&gt;% st_transform(st_crs(NM.training.points)) %&gt;% dplyr::select(c(esd_ssurgo=&quot;ecoclassname.x&quot;, ESG_ssurgo=&quot;GroupID&quot;, Name_ssurgo=&quot;GroupName&quot;))
+
+#CO
+#Training data
+mlra35_ssurgo_esg_training_pts &lt;- st_join(CO.training.points, mlra35_ssurgo_esg.sf, join = st_intersects) %&gt;% distinct()
+mlra35_ssurgo_esg_training_pts &lt;- mlra35_ssurgo_esg_training_pts[-897,]
+mlra35_ssurgo_esg_training_pts &lt;- mlra35_ssurgo_esg_training_pts %&gt;% bind_cols(CO_dsm.ens.pred$data %&gt;% arrange(id) %&gt;% select(ens_truth=&quot;truth&quot;, ens_response=&quot;response&quot;))
+mlra35_ssurgo_esg_training_pts$ESG_ssurgo[mlra35_ssurgo_esg_training_pts$ESG_ssurgo==0] &lt;- NA
+mlra35_ssurgo_esg_training_pts &lt;- na.omit(mlra35_ssurgo_esg_training_pts)
+mlra35_ssurgo_esg_training_pts$ESG_ID_ssurgo &lt;-  as.factor(paste0(&quot;ES&quot;, mlra35_ssurgo_esg_training_pts$ESG_ssurgo))
+ACC(mlra35_ssurgo_esg_training_pts$ESG_ID, mlra35_ssurgo_esg_training_pts$ESG_ID_ssurgo)
+ACC(mlra35_ssurgo_esg_training_pts$ESG_ID, mlra35_ssurgo_esg_training_pts$ens_response)
+mlra35_ssurgo_esg_training_cfm &lt;- caret::confusionMatrix(mlra35_ssurgo_esg_training_pts$ESG_ID, mlra35_ssurgo_esg_training_pts$ESG_ID_ssurgo)
+mlra35_ens_esg_training_cfm &lt;- caret::confusionMatrix( mlra35_ssurgo_esg_training_pts$ens_response, mlra35_ssurgo_esg_training_pts$ESG_ID)
+
+#External validation data
+mlra35_ssurgo_esg_extVal_pts &lt;- st_join(CO_Validation_Final, mlra35_ssurgo_esg.sf, join = st_intersects) %&gt;% distinct()
+mlra35_ssurgo_esg_extVal_pts &lt;- mlra35_ssurgo_esg_extVal_pts %&gt;% bind_cols(CO_dsm_ens_extVal$data  %&gt;% select(ens_response=&quot;response&quot;))
+mlra35_ssurgo_esg_extVal_pts$ESG_ssurgo[mlra35_ssurgo_esg_extVal_pts$ESG_ssurgo==0] &lt;- NA
+mlra35_ssurgo_esg_extVal_pts &lt;- na.omit(mlra35_ssurgo_esg_extVal_pts)
+mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo &lt;-  as.factor(paste0(&quot;ES&quot;, mlra35_ssurgo_esg_extVal_pts$ESG_ssurgo))
+mlra35_ssurgo_esg_extVal_pts$ESG_number_val &lt;-  as.factor(paste0(&quot;ES&quot;, mlra35_ssurgo_esg_extVal_pts$ESG_number_val))
+levels(mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo) &lt;- c(levels(mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo), &quot;ES1&quot; ,&quot;ES2&quot;, &quot;ES99&quot;)
+levels(mlra35_ssurgo_esg_extVal_pts$ESG_number_val) &lt;- c(levels(mlra35_ssurgo_esg_extVal_pts$ESG_number_val), &quot;ES1&quot; ,&quot;ES6&quot;)
+ACC(mlra35_ssurgo_esg_extVal_pts$ESG_number_val, mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo)
+ACC(mlra35_ssurgo_esg_extVal_pts$ESG_number_val, mlra35_ssurgo_esg_extVal_pts$ens_response)
+mlra35_ssurgo_esg_exVal_cfm &lt;- caret::confusionMatrix(mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo, mlra35_ssurgo_esg_extVal_pts$ESG_number_val)
+mlra35_ens_esg_exVal_cfm &lt;- caret::confusionMatrix(mlra35_ssurgo_esg_extVal_pts$ens_response,mlra35_ssurgo_esg_extVal_pts$ESG_number_val)
+
+CO_training_cfm &lt;- bind_cols(data.frame(mlra35_ssurgo_esg_training_cfm$byClass) %&gt;% select(c(PA_ssurgo_training=&quot;Sensitivity&quot;, UA_ssurgo_training=&quot;Pos.Pred.Value&quot;)), data.frame(mlra35_ens_esg_training_cfm$byClass) %&gt;% select(c(PA_ens_training=&quot;Sensitivity&quot;, UA_ens_training=&quot;Pos.Pred.Value&quot;)))
+
+CO_exVal_cfm &lt;- bind_cols(data.frame(mlra35_ssurgo_esg_exVal_cfm$byClass) %&gt;% select(c(PA_ssurgo_exVal=&quot;Sensitivity&quot;, UA_ssurgo_exVal=&quot;Pos.Pred.Value&quot;)), data.frame(mlra35_ens_esg_exVal_cfm$byClass) %&gt;% select(c(PA_ens_exVal=&quot;Sensitivity&quot;, UA_ens_exVal=&quot;Pos.Pred.Value&quot;)))
+
+CO_ssurgo_ens_cfm &lt;- bind_cols(CO_training_cfm, CO_exVal_cfm)
+
+mlra35_ssurgo_esg_training_cfm$overall
+mlra35_ens_esg_training_cfm$overall
+mlra35_ssurgo_esg_exVal_cfm$overall
+mlra35_ens_esg_exVal_cfm$overall
+
+#NM
+#Training data
+mlra42_ssurgo_esg_training_pts &lt;- st_join(NM.training.points, mlra42_ssurgo_esg.sf, join = st_intersects) %&gt;% distinct()
+mlra42_ssurgo_esg_training_pts &lt;- mlra42_ssurgo_esg_training_pts[-setdiff(seq(1:2626), nm.points.covariates$Index),]
+mlra42_ssurgo_esg_training_pts &lt;- mlra42_ssurgo_esg_training_pts %&gt;% bind_cols(NM_dsm.ens.pred$data %&gt;% arrange(id) %&gt;% select(ens_truth=&quot;truth&quot;, ens_response=&quot;response&quot;))
+mlra42_ssurgo_esg_training_pts$ESG_ssurgo[mlra42_ssurgo_esg_training_pts$ESG_ssurgo==0] &lt;- NA
+mlra42_ssurgo_esg_training_pts &lt;- na.omit(mlra42_ssurgo_esg_training_pts)
+mlra42_ssurgo_esg_training_pts$ESG_ID_ssurgo &lt;-  as.factor(paste0(&quot;ES&quot;, mlra42_ssurgo_esg_training_pts$ESG_ssurgo))
+ACC(mlra42_ssurgo_esg_training_pts$ESG_ID, mlra42_ssurgo_esg_training_pts$ESG_ID_ssurgo)
+ACC(mlra42_ssurgo_esg_training_pts$ESG_ID, mlra42_ssurgo_esg_training_pts$ens_response)
+mlra42_ssurgo_esg_training_cfm &lt;- caret::confusionMatrix( mlra42_ssurgo_esg_training_pts$ESG_ID_ssurgo, mlra42_ssurgo_esg_training_pts$ESG_ID)
+mlra42_ens_esg_training_cfm &lt;- caret::confusionMatrix( mlra42_ssurgo_esg_training_pts$ens_response, mlra42_ssurgo_esg_training_pts$ESG_ID)
+
+#External validation data
+NM_Validation_Final &lt;- NM_Validation_Final %&gt;% bind_cols(NM_dsm_ens_extVal$data  %&gt;% select(ens_response=&quot;response&quot;))
+mlra42_ssurgo_esg_extVal_pts &lt;- st_join(NM_Validation_Final, mlra42_ssurgo_esg.sf, join = st_intersects) %&gt;% distinct()
+NM_Validation_Final %&gt;% distinct(geometry, .keep_all = TRUE)
+mlra42_ssurgo_esg_extVal_pts$ESG_ssurgo[mlra42_ssurgo_esg_extVal_pts$ESG_ssurgo==0] &lt;- NA
+mlra42_ssurgo_esg_extVal_pts &lt;- na.omit(mlra42_ssurgo_esg_extVal_pts)
+mlra42_ssurgo_esg_extVal_pts$ESG_ID_ssurgo &lt;-  as.factor(paste0(&quot;ES&quot;, mlra42_ssurgo_esg_extVal_pts$ESG_ssurgo))
+mlra42_ssurgo_esg_extVal_pts$ESG_number_val &lt;-  as.factor(paste0(&quot;ES&quot;, mlra42_ssurgo_esg_extVal_pts$ESG_number_val))
+ACC(mlra42_ssurgo_esg_extVal_pts$ESG_number_val, mlra42_ssurgo_esg_extVal_pts$ESG_ID_ssurgo)
+ACC(mlra42_ssurgo_esg_extVal_pts$ESG_number_val, mlra42_ssurgo_esg_extVal_pts$ens_response)
+mlra42_ssurgo_esg_exVal_cfm &lt;- caret::confusionMatrix(mlra42_ssurgo_esg_extVal_pts$ESG_ID_ssurgo, mlra42_ssurgo_esg_extVal_pts$ESG_number_val)
+mlra42_ens_esg_exVal_cfm &lt;- caret::confusionMatrix(mlra42_ssurgo_esg_extVal_pts$ens_response, mlra42_ssurgo_esg_extVal_pts$ESG_number_val)
+
+NM_training_cfm &lt;- bind_cols(data.frame(mlra42_ssurgo_esg_training_cfm$byClass) %&gt;% select(c(PA_ssurgo_training=&quot;Sensitivity&quot;, UA_ssurgo_training=&quot;Pos.Pred.Value&quot;)), data.frame(mlra42_ens_esg_training_cfm$byClass) %&gt;% select(c(PA_ens_training=&quot;Sensitivity&quot;, UA_ens_training=&quot;Pos.Pred.Value&quot;)))
+
+NM_exVal_cfm &lt;- bind_cols(data.frame(mlra42_ssurgo_esg_exVal_cfm$byClass) %&gt;% select(c(PA_ssurgo_exVal=&quot;Sensitivity&quot;, UA_ssurgo_exVal=&quot;Pos.Pred.Value&quot;)), data.frame(mlra42_ens_esg_exVal_cfm$byClass) %&gt;% select(c(PA_ens_exVal=&quot;Sensitivity&quot;, UA_ens_exVal=&quot;Pos.Pred.Value&quot;)))
+
+NM_ssurgo_ens_cfm &lt;- bind_cols(NM_training_cfm, NM_exVal_cfm)
+
+mlra42_ssurgo_esg_training_cfm$overall
+mlra42_ens_esg_training_cfm$overall
+mlra42_ssurgo_esg_exVal_cfm$overall
+mlra42_ens_esg_exVal_cfm$overall
+#Calculate qunatity and allocation dissagreement
+
+CO_training_ssurgo.kstat &lt;- kstat(mlra35_ssurgo_esg_training_pts$ESG_ID_ssurgo, mlra35_ssurgo_esg_training_pts$ESG_ID)
+CO_training_dsm_ens.kstat &lt;- kstat(mlra35_ssurgo_esg_training_pts$ens_response, mlra35_ssurgo_esg_training_pts$ESG_ID)
+CO_extVal_ssurgo.kstat &lt;- kstat(mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo, mlra35_ssurgo_esg_extVal_pts$ESG_number_val)
+CO_extVal__dsm_ens.kstat &lt;- kstat(mlra35_ssurgo_esg_extVal_pts$ens_response, mlra35_ssurgo_esg_extVal_pts$ESG_number_val)
+
+NM_training_ssurgo.kstat &lt;- kstat(mlra42_ssurgo_esg_training_pts$ESG_ID_ssurgo, mlra42_ssurgo_esg_training_pts$ESG_ID)
+NM_training_dsm_ens.kstat &lt;- kstat(mlra42_ssurgo_esg_training_pts$ens_response, mlra42_ssurgo_esg_training_pts$ESG_ID)
+NM_extVal_ssurgo.kstat &lt;- kstat(mlra42_ssurgo_esg_extVal_pts$ESG_ID_ssurgo, mlra42_ssurgo_esg_extVal_pts$ESG_number_val)
+NM_extVal__dsm_ens.kstat &lt;- kstat(mlra42_ssurgo_esg_extVal_pts$ens_response, mlra42_ssurgo_esg_extVal_pts$ESG_number_val)
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#Output data 
+save(SMU_geo.all, SMU_geo.proc, SMU_geo, SMU_geo2, SMU_geo3, SMU_geo.proc.sf, SMU_geo.proc.sf.t, file = &quot;/data/data2/data/esgMapping/R/SSURGO_SMU.Rdata&quot;)</code></pre>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.5.2 (2018-12-20)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 7 x64 (build 7601) Service Pack 1
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+loaded via a namespace (and not attached):
+ [1] workflowr_1.3.0   Rcpp_1.0.1        digest_0.6.19    
+ [4] rprojroot_1.3-2   backports_1.1.4   git2r_0.25.2.9000
+ [7] magrittr_1.5      evaluate_0.13     stringi_1.4.3    
+[10] fs_1.2.7          whisker_0.3-2     rmarkdown_1.12   
+[13] tools_3.5.2       stringr_1.4.0     glue_1.3.1       
+[16] xfun_0.6          yaml_2.2.0        compiler_3.5.2   
+[19] htmltools_0.3.6   knitr_1.23       </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
