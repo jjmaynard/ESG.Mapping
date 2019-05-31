@@ -1,0 +1,313 @@
+---
+title: "ESG SSURGO Processing"
+author: "Jonathan Maynard"
+email: jonathan.maynard@ars.usda.gov
+date: "Feb 10, 2017"
+output: html_document
+---
+
+#### This notebook processes and plots SSURGO-derived ESG maps based on the ESG class associated with the dominant component within each soil map unit. SSURGO ecological site and SMU component data were downloaded from SoilDataAccess (Accessed 12 Oct. 2017), merged based on the representative component percentage for each SMU, and aggregated by dominant condition. In rare cases (<0.5%) where multiple ecological site concepts resulted in equal representative percentages within a SMU, ESD selection was based on consulting local soil survey office and analysis of correlated minor components. The ESD-ESG look-up tables developed the Ecological Site Grouping workshops were then used to assign the appropriate ESG group to each SMU ecologi-cal site class. 
+
+```{r eval=FALSE}
+required.packages <- c("here", "doParallel","foreach","dplyr","tidyr","soilDB","rgeos","sp","raster","maps","rgdal","sf","ggplot2","rasterVis")
+new.packages <- required.packages[!(required.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(required.packages, require, character.only=T)
+rm(required.packages, new.packages)
+
+
+no_cores <- detectCores() - 1  
+cl <- makeCluster(no_cores, type="SOCK", outfile = "")  
+registerDoParallel(cl)  
+getDoParWorkers()
+```
+
+```{r eval=FALSE}
+#Study areas
+NM <- readOGR(dsn="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area",layer="Chihauhuan_Study_Area_Boundary")
+CO <- readOGR(dsn="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area",layer="epaL4_mlra35sel_bndc")
+#Load in NASIS training points
+co.points <- readOGR(dsn = "/data/data2/data/esgMapping/analysis/data/derived_data/vector_data", layer = "CO_points_final")
+nm.points <- readOGR(dsn = "/data/data2/data/esgMapping/analysis/data/derived_data/vector_data", layer = "NM_points_final")
+# ESG lookup key
+unique(co.points@data[10:11])
+unique(nm.points@data[14:15])
+
+#Read in MLRA 42 SMU list
+mlra42_esg <- read.csv('/data/data2/mlra42-esg.csv')
+SMU_list <- mlra42_esg$mukey
+
+#set number of SMU per query to 50
+x <- seq(1,length(SMU_list), 50)
+y <- seq(50,length(SMU_list), 50)
+y[length(y)] <- length(SMU_list)
+x <- x[-length(x)]
+#This works but throws an error when a very large SMU is present. Therefore requires limiting the number of SMUs, i.e., 2 or less
+SMU_geo <- list()
+SMU_geo <- foreach(i=1:length(x), .packages = c("soilDB", "purrr")) %dopar% {
+  #for(i in 1:3){
+  tryCatch({
+  SMU_geo[[i]] <- SDA_query(paste0("select G.MupolygonWktWgs84 as geom, mapunit.mukey, muname
+  FROM mapunit
+    CROSS APPLY SDA_Get_MupolygonWktWgs84_from_Mukey(mapunit.mukey) as G
+    WHERE mukey IN ('", paste0(SMU_list[x[i]:y[i]-1], sep="', '", collapse=""), SMU_list[y[i]],"')"))
+  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+SMU_geo.all <- bind_rows(SMU_geo)
+saveRDS(SMU_geo.all, "MLRA_42_SMU1.rds")
+length(unique(SMU_geo.all$mukey))
+length(SMU_list)
+missing <- match(SMU_list, unique(SMU_geo.all$mukey), nomatch=NA)
+SMU_list_rerun <- SMU_list[which(is.na(missing))]
+#rm(SMU_geo.all)
+#set number of SMU per query to 1
+x <- seq(1,length(SMU_list_rerun), 10)
+y <- seq(10,length(SMU_list_rerun), 10)
+y[length(y)] <- length(SMU_list_rerun)
+x <- x[-length(x)]
+#This works but throws an error when a very large SMU is present. Therefore requires limiting the number of SMUs, i.e., 2 or less
+SMU_geo2 <- list()
+SMU_geo2 <- foreach(i=1:length(x), .packages = c("soilDB")) %dopar% {
+  #for(i in 1:3){
+  tryCatch({
+    SMU_geo2[[i]] <- SDA_query(paste0("select G.MupolygonWktWgs84 as geom, mapunit.mukey, muname
+      FROM mapunit
+      CROSS APPLY SDA_Get_MupolygonWktWgs84_from_Mukey(mapunit.mukey) as G
+      WHERE mukey IN ('", paste0(SMU_list_rerun[x[i]:y[i]-1], sep="', '", collapse=""), SMU_list_rerun[y[i]],"')"))
+  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+  }
+
+#SMU_geo.all <- readRDS("SMU_geo_all1.rds")
+SMU_geo.all <- bind_rows(SMU_geo.all, SMU_geo2)
+saveRDS(SMU_geo.all, "MLRA_42_SMU2.rds")
+missing2 <- match(SMU_list, unique(SMU_geo.all$mukey), nomatch=NA)
+SMU_list_rerun2 <- SMU_list[which(is.na(missing2))]
+#rm(SMU_geo.all)
+
+x <- seq(1,length(SMU_list_rerun2), 1)
+y <- seq(1,length(SMU_list_rerun2), 1)
+
+SMU_geo3 <- list()
+SMU_geo3 <- foreach(i=1:length(SMU_list_rerun2), .packages = c("soilDB")) %dopar% {
+  #for(i in 1:3){
+  tryCatch({
+    SMU_geo3[[i]] <- SDA_query(paste0("select G.MupolygonWktWgs84 as geom, mapunit.mukey, muname
+      FROM mapunit
+      CROSS APPLY SDA_Get_MupolygonWktWgs84_from_Mukey(mapunit.mukey) as G
+      WHERE mukey IN ('", paste0(SMU_list_rerun2[x[i]:y[i]-1], sep="', '", collapse=""), SMU_list_rerun2[y[i]],"')"))
+  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+#SMU_geo.all <- readRDS("SMU_geo_all2.rds")
+SMU_geo.all <- bind_rows(SMU_geo.all, SMU_geo3)
+saveRDS(SMU_geo.all, "MLRA_42_SMU2.rds")
+
+mu.unique <- unique(SMU_geo.all$mukey)
+
+save.image("SSURGO_MLRA_42.RData")
+SMU_geo.proc <- processSDA_WKT(SMU_geo.all)
+
+writeOGR(SMU_geo.proc, dsn='.', layer="SMU_geo.proc", driver="ESRI Shapefile", overwrite_layer=TRUE)
+
+# Color palette used in rangelands article
+cbPalette <- c("#00a884", "#beffe7", "#ffa77f", "#ffffbf", "#737301", "#fe0000", "#0071fe", "#732500")
+
+SMU_geo.proc.sf <- SMU_geo.proc %>%
+                     st_as_sf() %>% 
+                     st_transform(st_crs(NM.sf))
+SMU_geo.proc.sf$Area <- st_area(SMU_geo.proc.sf)
+
+NM.sf <- NM %>% st_as_sf()
+mlra42_ssurgo_esg <- SMU_geo.proc %>%
+                     st_as_sf() %>% 
+                     st_transform(st_crs(NM.sf)) %>% 
+                     st_intersection(NM.sf)  %>%
+                     left_join(mlra42_esg, by="mukey") 
+
+mlra42_ssurgo_esg$GroupName = factor(mlra42_ssurgo_esg$GroupName,levels(mlra42_ssurgo_esg$GroupName)[c(7,3,6,4,1,5,2)])
+st_write(mlra42_ssurgo_esg, "/data/data2/data/esgMapping/analysis/data/derived_data/SSURGO_ESG/mlra42_ssurgo_esg.shp")
+
+mlra42_ssurgo_esg$Area <- st_area(mlra42_ssurgo_esg)
+area <- mlra42_ssurgo_esg$Area
+describe(data.frame(as.numeric(area)))
+quantile(mlra42_ssurgo_esg$Area, c(.99, .05, .01, .005))
+
+sub <- SMU_geo.proc.sf %>% filter(Area<quantile(mlra42_ssurgo_esg$Area,.005))
+
+#cbPalette <- c('#00a884','#beffe7','#ffa77f','#ffffbf','#737301','#fe0000','#0071fe','#732500')
+
+#create fishnet grid to underlay polygon map
+# make an object the size and shape of the output you want
+NM.sf <- NM %>% st_as_sf()
+NM_bb <- matrix(c(-1213894.1,  1307347.4,
+                      -737762.7,  1307347.4,
+                      -737762.7, 768173.3,
+                     -1213894.1, 768173.3,
+                     -1213894.1,  1307347.4), byrow = TRUE, ncol = 2) %>%
+  list() %>% 
+  st_polygon() %>% 
+  st_sfc(., crs = st_crs(NM.sf))
+
+# Grid 
+NM_grid <- st_make_grid(NM_bb, n = c(60, 60),
+                                 crs = st_crs(NM), what = 'polygons')  %>%
+  st_sf('geometry' = ., data.frame('ID' = 1:length(.))) %>%
+   st_intersection(NM.sf)
+plot(NM_grid)
+
+cbPalette <- c('#8c510a', '#bf812d', '#dfc27d', '#f6e8c3', '#c7eae5', '#5ab4ac', '#01665e')
+mlra42_ssurgo_esg.plot <- ggplot() + 
+  geom_sf(data = NM_grid, fill=NA, show.legend=F, color="black", lwd = 0.4) +
+  geom_sf(data = mlra42_ssurgo_esg, aes(fill = factor(GroupName)), color=NA) +
+  coord_sf(datum = st_crs(mlra42_ssurgo_esg))+ labs(x = "Long", y = "Lat", fill = "ESG") +
+  ggtitle("Ecological Site Group") +scale_fill_manual(values=cbPalette)
+#mlra42_ssurgo_esg.plot
+
+ggsave(mlra42_ssurgo_esg.plot, file = "/data/data2/data/esgMapping/analysis/figures/NM_ssurgo_esg_plot.pdf", width = 6, height = 6)
+ggsave(mlra42_ssurgo_esg.plot, file = "/data/data2/data/esgMapping/analysis/figures/NM_ssurgo_esg_plot.png", width = 6, height = 6, type = "cairo-png")
+
+
+# MLRA SSURGO ESG
+mlra35_ssurgo_esg <- st_read("/data/data2/data/esgMapping/analysis/data/derived_data/SSURGO_ESG/CO_Plat_SSURGO_ESGs/SSURGO_ESGs_UT_MLRA35.shp", quiet = TRUE)
+mlra35_ssurgo_esg$Name = factor(mlra35_ssurgo_esg$Name,levels(mlra35_ssurgo_esg$Name)[c(5,6,8,7,3,4,1,2)])
+mlra35_ssurgo_esg$Area <- st_area(mlra35_ssurgo_esg)
+quantile(mlra35_ssurgo_esg$Area, c(.99, .05, .01, .005))
+summary(mlra35_ssurgo_esg$Area)
+# make an object the size and shape of the output you want
+CO.sf <- CO %>% st_as_sf()
+CO_bb <- matrix(c(-1553413,  1952277,
+                      -1110609,  1952277,
+                      -1110609, 1629234,
+                     -1553413, 1629234,
+                     -1553413,  1952277), byrow = TRUE, ncol = 2) %>%
+  list() %>% 
+  st_polygon() %>% 
+  st_sfc(., crs = st_crs(CO.sf))
+
+#Grid 
+CO_grid <- st_make_grid(CO_bb, n = c(60, 60),
+                                 crs = st_crs(CO), what = 'polygons')  %>%
+  st_sf('geometry' = ., data.frame('ID' = 1:length(.))) %>%
+   st_intersection(CO.sf)
+plot(CO_grid_20x10)
+#palette for mlra 35 with factor levels: [1] "Bottoms and flats", "Deep rocky", "Finer shrublands", "Outcrops and slopes", "Saline hills and badlands", "Saline uplands and flats", "Sandy grasslands and shrublands", "Shallow shrublands and woodlands"
+#cbPalette <- c('#0071fe','#732500','#737301','#fe0000','#00a884','#beffe7','#ffffbf','#ffa77f')
+cbPalette <- c('#8c510a', '#bf812d', '#dfc27d', '#f6e8c3', '#c7eae5', '#80cdc1', '#35978f', '#01665e')
+
+mlra35_ssurgo_esg.plot <- ggplot() + 
+  geom_sf(data = CO_grid, fill=NA, show.legend=F, color="black", lwd = 0.4) +
+  geom_sf(data = mlra35_ssurgo_esg, aes(fill = factor(Name)), color=NA) +
+ coord_sf(datum = st_crs(mlra35_ssurgo_esg)) + labs(x = "Long", y = "Lat", fill = "ESG") +
+  ggtitle("Ecological Site Group") +scale_fill_manual(values=cbPalette)
+#mlra35_ssurgo_esg.plot
+
+ggsave(mlra35_ssurgo_esg.plot, file = "/data/data2/data/esgMapping/analysis/figures/CO_ssurgo_esg_plot.pdf", width = 6, height = 6)
+ggsave(mlra35_ssurgo_esg.plot, file = "/data/data2/data/esgMapping/analysis/figures/CO_ssurgo_esg_plot.png", width = 6, height = 6, type = "cairo-png")
+
+
+save.image("/data/data2/data/esgMapping/R/CO_NM_ESG_SSURGO.RData")
+load("/data/data2/data/esgMapping/R/CO_NM_ESG_SSURGO.RData")
+
+#Extract cross validation and external validation points from SSURGO polygons
+
+
+
+CO.training.points <- st_as_sf(co.points) %>% dplyr::select(c("esdname", "ESG_number", "ESG_Name", "ESG_ID"))
+NM.training.points <- st_as_sf(nm.points) %>% dplyr::select(c("esd_unique", "ESG", "Name"))
+CO_Validation_Final <- st_read("/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/CO_ext_valid_points.shp") %>% st_transform(st_crs(CO.training.points)) %>% dplyr::select(c(ESG_number_val="ESG_number", esd_unique_val="esd_unique"))
+NM_Validation_Final <- st_read("/data/data2/data/esgMapping/analysis/data/derived_data/vector_data/NM_ext_valid_points.shp") %>% st_transform(st_crs(NM.training.points)) %>% dplyr::select(ESG_number_val="Group")
+NM_Validation_Final <- NM_Validation_Final[-setdiff(seq(1:1427), nm.validation.points.covariates$Index),]
+mlra35_ssurgo_esg.sf <- st_as_sf(mlra35_ssurgo_esg) %>% st_transform(st_crs(CO.training.points)) %>% dplyr::select(c(esd_ssurgo="esd_unique", ESG_ssurgo="ESG", Name_ssurgo="Name"))
+mlra42_ssurgo_esg.sf <- st_as_sf(mlra42_ssurgo_esg) %>% st_transform(st_crs(NM.training.points)) %>% dplyr::select(c(esd_ssurgo="ecoclassname.x", ESG_ssurgo="GroupID", Name_ssurgo="GroupName"))
+
+#CO
+#Training data
+mlra35_ssurgo_esg_training_pts <- st_join(CO.training.points, mlra35_ssurgo_esg.sf, join = st_intersects) %>% distinct()
+mlra35_ssurgo_esg_training_pts <- mlra35_ssurgo_esg_training_pts[-897,]
+mlra35_ssurgo_esg_training_pts <- mlra35_ssurgo_esg_training_pts %>% bind_cols(CO_dsm.ens.pred$data %>% arrange(id) %>% select(ens_truth="truth", ens_response="response"))
+mlra35_ssurgo_esg_training_pts$ESG_ssurgo[mlra35_ssurgo_esg_training_pts$ESG_ssurgo==0] <- NA
+mlra35_ssurgo_esg_training_pts <- na.omit(mlra35_ssurgo_esg_training_pts)
+mlra35_ssurgo_esg_training_pts$ESG_ID_ssurgo <-  as.factor(paste0("ES", mlra35_ssurgo_esg_training_pts$ESG_ssurgo))
+ACC(mlra35_ssurgo_esg_training_pts$ESG_ID, mlra35_ssurgo_esg_training_pts$ESG_ID_ssurgo)
+ACC(mlra35_ssurgo_esg_training_pts$ESG_ID, mlra35_ssurgo_esg_training_pts$ens_response)
+mlra35_ssurgo_esg_training_cfm <- caret::confusionMatrix(mlra35_ssurgo_esg_training_pts$ESG_ID, mlra35_ssurgo_esg_training_pts$ESG_ID_ssurgo)
+mlra35_ens_esg_training_cfm <- caret::confusionMatrix( mlra35_ssurgo_esg_training_pts$ens_response, mlra35_ssurgo_esg_training_pts$ESG_ID)
+
+#External validation data
+mlra35_ssurgo_esg_extVal_pts <- st_join(CO_Validation_Final, mlra35_ssurgo_esg.sf, join = st_intersects) %>% distinct()
+mlra35_ssurgo_esg_extVal_pts <- mlra35_ssurgo_esg_extVal_pts %>% bind_cols(CO_dsm_ens_extVal$data  %>% select(ens_response="response"))
+mlra35_ssurgo_esg_extVal_pts$ESG_ssurgo[mlra35_ssurgo_esg_extVal_pts$ESG_ssurgo==0] <- NA
+mlra35_ssurgo_esg_extVal_pts <- na.omit(mlra35_ssurgo_esg_extVal_pts)
+mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo <-  as.factor(paste0("ES", mlra35_ssurgo_esg_extVal_pts$ESG_ssurgo))
+mlra35_ssurgo_esg_extVal_pts$ESG_number_val <-  as.factor(paste0("ES", mlra35_ssurgo_esg_extVal_pts$ESG_number_val))
+levels(mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo) <- c(levels(mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo), "ES1" ,"ES2", "ES99")
+levels(mlra35_ssurgo_esg_extVal_pts$ESG_number_val) <- c(levels(mlra35_ssurgo_esg_extVal_pts$ESG_number_val), "ES1" ,"ES6")
+ACC(mlra35_ssurgo_esg_extVal_pts$ESG_number_val, mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo)
+ACC(mlra35_ssurgo_esg_extVal_pts$ESG_number_val, mlra35_ssurgo_esg_extVal_pts$ens_response)
+mlra35_ssurgo_esg_exVal_cfm <- caret::confusionMatrix(mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo, mlra35_ssurgo_esg_extVal_pts$ESG_number_val)
+mlra35_ens_esg_exVal_cfm <- caret::confusionMatrix(mlra35_ssurgo_esg_extVal_pts$ens_response,mlra35_ssurgo_esg_extVal_pts$ESG_number_val)
+
+CO_training_cfm <- bind_cols(data.frame(mlra35_ssurgo_esg_training_cfm$byClass) %>% select(c(PA_ssurgo_training="Sensitivity", UA_ssurgo_training="Pos.Pred.Value")), data.frame(mlra35_ens_esg_training_cfm$byClass) %>% select(c(PA_ens_training="Sensitivity", UA_ens_training="Pos.Pred.Value")))
+
+CO_exVal_cfm <- bind_cols(data.frame(mlra35_ssurgo_esg_exVal_cfm$byClass) %>% select(c(PA_ssurgo_exVal="Sensitivity", UA_ssurgo_exVal="Pos.Pred.Value")), data.frame(mlra35_ens_esg_exVal_cfm$byClass) %>% select(c(PA_ens_exVal="Sensitivity", UA_ens_exVal="Pos.Pred.Value")))
+
+CO_ssurgo_ens_cfm <- bind_cols(CO_training_cfm, CO_exVal_cfm)
+
+mlra35_ssurgo_esg_training_cfm$overall
+mlra35_ens_esg_training_cfm$overall
+mlra35_ssurgo_esg_exVal_cfm$overall
+mlra35_ens_esg_exVal_cfm$overall
+
+#NM
+#Training data
+mlra42_ssurgo_esg_training_pts <- st_join(NM.training.points, mlra42_ssurgo_esg.sf, join = st_intersects) %>% distinct()
+mlra42_ssurgo_esg_training_pts <- mlra42_ssurgo_esg_training_pts[-setdiff(seq(1:2626), nm.points.covariates$Index),]
+mlra42_ssurgo_esg_training_pts <- mlra42_ssurgo_esg_training_pts %>% bind_cols(NM_dsm.ens.pred$data %>% arrange(id) %>% select(ens_truth="truth", ens_response="response"))
+mlra42_ssurgo_esg_training_pts$ESG_ssurgo[mlra42_ssurgo_esg_training_pts$ESG_ssurgo==0] <- NA
+mlra42_ssurgo_esg_training_pts <- na.omit(mlra42_ssurgo_esg_training_pts)
+mlra42_ssurgo_esg_training_pts$ESG_ID_ssurgo <-  as.factor(paste0("ES", mlra42_ssurgo_esg_training_pts$ESG_ssurgo))
+ACC(mlra42_ssurgo_esg_training_pts$ESG_ID, mlra42_ssurgo_esg_training_pts$ESG_ID_ssurgo)
+ACC(mlra42_ssurgo_esg_training_pts$ESG_ID, mlra42_ssurgo_esg_training_pts$ens_response)
+mlra42_ssurgo_esg_training_cfm <- caret::confusionMatrix( mlra42_ssurgo_esg_training_pts$ESG_ID_ssurgo, mlra42_ssurgo_esg_training_pts$ESG_ID)
+mlra42_ens_esg_training_cfm <- caret::confusionMatrix( mlra42_ssurgo_esg_training_pts$ens_response, mlra42_ssurgo_esg_training_pts$ESG_ID)
+
+#External validation data
+NM_Validation_Final <- NM_Validation_Final %>% bind_cols(NM_dsm_ens_extVal$data  %>% select(ens_response="response"))
+mlra42_ssurgo_esg_extVal_pts <- st_join(NM_Validation_Final, mlra42_ssurgo_esg.sf, join = st_intersects) %>% distinct()
+NM_Validation_Final %>% distinct(geometry, .keep_all = TRUE)
+mlra42_ssurgo_esg_extVal_pts$ESG_ssurgo[mlra42_ssurgo_esg_extVal_pts$ESG_ssurgo==0] <- NA
+mlra42_ssurgo_esg_extVal_pts <- na.omit(mlra42_ssurgo_esg_extVal_pts)
+mlra42_ssurgo_esg_extVal_pts$ESG_ID_ssurgo <-  as.factor(paste0("ES", mlra42_ssurgo_esg_extVal_pts$ESG_ssurgo))
+mlra42_ssurgo_esg_extVal_pts$ESG_number_val <-  as.factor(paste0("ES", mlra42_ssurgo_esg_extVal_pts$ESG_number_val))
+ACC(mlra42_ssurgo_esg_extVal_pts$ESG_number_val, mlra42_ssurgo_esg_extVal_pts$ESG_ID_ssurgo)
+ACC(mlra42_ssurgo_esg_extVal_pts$ESG_number_val, mlra42_ssurgo_esg_extVal_pts$ens_response)
+mlra42_ssurgo_esg_exVal_cfm <- caret::confusionMatrix(mlra42_ssurgo_esg_extVal_pts$ESG_ID_ssurgo, mlra42_ssurgo_esg_extVal_pts$ESG_number_val)
+mlra42_ens_esg_exVal_cfm <- caret::confusionMatrix(mlra42_ssurgo_esg_extVal_pts$ens_response, mlra42_ssurgo_esg_extVal_pts$ESG_number_val)
+
+NM_training_cfm <- bind_cols(data.frame(mlra42_ssurgo_esg_training_cfm$byClass) %>% select(c(PA_ssurgo_training="Sensitivity", UA_ssurgo_training="Pos.Pred.Value")), data.frame(mlra42_ens_esg_training_cfm$byClass) %>% select(c(PA_ens_training="Sensitivity", UA_ens_training="Pos.Pred.Value")))
+
+NM_exVal_cfm <- bind_cols(data.frame(mlra42_ssurgo_esg_exVal_cfm$byClass) %>% select(c(PA_ssurgo_exVal="Sensitivity", UA_ssurgo_exVal="Pos.Pred.Value")), data.frame(mlra42_ens_esg_exVal_cfm$byClass) %>% select(c(PA_ens_exVal="Sensitivity", UA_ens_exVal="Pos.Pred.Value")))
+
+NM_ssurgo_ens_cfm <- bind_cols(NM_training_cfm, NM_exVal_cfm)
+
+mlra42_ssurgo_esg_training_cfm$overall
+mlra42_ens_esg_training_cfm$overall
+mlra42_ssurgo_esg_exVal_cfm$overall
+mlra42_ens_esg_exVal_cfm$overall
+#Calculate qunatity and allocation dissagreement
+
+CO_training_ssurgo.kstat <- kstat(mlra35_ssurgo_esg_training_pts$ESG_ID_ssurgo, mlra35_ssurgo_esg_training_pts$ESG_ID)
+CO_training_dsm_ens.kstat <- kstat(mlra35_ssurgo_esg_training_pts$ens_response, mlra35_ssurgo_esg_training_pts$ESG_ID)
+CO_extVal_ssurgo.kstat <- kstat(mlra35_ssurgo_esg_extVal_pts$ESG_ID_ssurgo, mlra35_ssurgo_esg_extVal_pts$ESG_number_val)
+CO_extVal__dsm_ens.kstat <- kstat(mlra35_ssurgo_esg_extVal_pts$ens_response, mlra35_ssurgo_esg_extVal_pts$ESG_number_val)
+
+NM_training_ssurgo.kstat <- kstat(mlra42_ssurgo_esg_training_pts$ESG_ID_ssurgo, mlra42_ssurgo_esg_training_pts$ESG_ID)
+NM_training_dsm_ens.kstat <- kstat(mlra42_ssurgo_esg_training_pts$ens_response, mlra42_ssurgo_esg_training_pts$ESG_ID)
+NM_extVal_ssurgo.kstat <- kstat(mlra42_ssurgo_esg_extVal_pts$ESG_ID_ssurgo, mlra42_ssurgo_esg_extVal_pts$ESG_number_val)
+NM_extVal__dsm_ens.kstat <- kstat(mlra42_ssurgo_esg_extVal_pts$ens_response, mlra42_ssurgo_esg_extVal_pts$ESG_number_val)
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#Output data 
+save(SMU_geo.all, SMU_geo.proc, SMU_geo, SMU_geo2, SMU_geo3, SMU_geo.proc.sf, SMU_geo.proc.sf.t, file = "/data/data2/data/esgMapping/R/SSURGO_SMU.Rdata")
+```
+
