@@ -1,6 +1,7 @@
 ---
 title: "ESG Covariate Processing"
 author: "Jonathan Maynard"
+email: jonathan.maynard@ars.usda.gov
 date: "Feb 10, 2017"
 output: html_document
 ---

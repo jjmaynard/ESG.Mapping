@@ -1,0 +1,1760 @@
+---
+title: "ESG MODIS Hyper-temporal Image Processing"
+author: "Jonathan Maynard"
+email: jonathan.maynard@ars.usda.gov
+date: "Feb 10, 2017"
+output: html_document
+---
+
+## Overview
+#### This script downloads and processes hyper-temporal imagery producing: NDVI, NIR, MIR, Red, LST-day, LST-night at 250m and a 16-day interval
+```{r eval=FALSE}
+required.packages <- c("here", "MODIS","maptools","rgdal","raster","maps","hyperSpec","lubridate","foreach","sp","gdalUtils","e1071","prodlim","Cairo","lattice","bfast","zoo","rgeos","shapefiles","fastcluster","spatial.tools","plyr","ggplot2","rasterVis","AnomalyDetection","stringdist","data.table","fastmatch","caret","kernlab","pROC","parallel","foreach","plyr","snowfall","imputeTS","signal","dummies","gtools","imputeTS","doParallel")
+new.packages <- required.packages[!(required.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(required.packages, require, character.only=T)
+rm(required.packages, new.packages)
+
+no_cores <- detectCores() - 1  
+cl <- makeCluster(no_cores, type="SOCK", outfile = "")  
+registerDoParallel(cl)  
+getDoParWorkers()
+```
+
+```{r eval=FALSE}
+######################################################################################################################################
+#------------------Step 1. Load in shapefiles
+######################################################################################################################################
+
+#CO and NM Shapefiles
+CO <- readOGR(dsn = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area", layer = "epaL4_mlra35sel_bndc")
+# load in NM shapefile
+NM <- readOGR(dsn = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area",
+    layer = "Chihauhuan_Study_Area_Boundary")
+
+# CO rasterize Set up a raster 'template' to use in rasterize()
+ext.co <- extent(CO)
+xy.co <- abs(apply(as.matrix(bbox(CO)), 1, diff))
+r.co <- raster(ext.co, ncol = xy.co[1]/250, nrow = xy.co[2]/250)
+
+# Rasterize the shapefile
+CO_raster <- rasterize(CO, r.co)
+res(CO_raster) <- 250
+plot(CO_raster)
+
+# NM rasterize Set up a raster 'template' to use in rasterize()
+ext.nm <- extent(NM)
+xy.nm <- abs(apply(as.matrix(bbox(NM)), 1, diff))
+r.nm <- raster(ext.nm, ncol = xy.nm[1]/250, nrow = xy.nm[2]/250)
+
+# Rasterize the shapefile
+NM_raster <- rasterize(NM, r.nm)
+res(NM_raster) <- 250
+plot(NM_raster)
+
+
+######################################################################################################################################
+#------------Step 2.AQUIRE ALL MODIS IMAGERY
+######################################################################################################################################
+# set once
+MODIS:::checkTools()
+MODISoptions(MODISserverOrder = c("LAADS", "LPDAAC"))
+
+getProduct()
+
+# set for MOD13Q1
+MODIS:::checkTools()
+# use -- gdalPath='/usr/local/bin/') -- in MODISoptions if R can't find gdal
+MODISoptions(localArcPath = "/data/data1/R_DATA/MODIS/MODIS_ARC/", outDirPath = "/data/data1/R_DATA//MODIS/MODIS_ARC/PROCESSES")
+
+# Vegetation Indicies (250 M) Two study areas: check to make sure we have coverage
+getTile(NM)
+getTile(CO)
+
+# VIs
+getHdf(product = "MOD13Q1", begin = "2017035", tileH = 8, tileV = 5:6, collection = "005")
+getHdf(product = "MOD13Q1", begin = "2017035", tileH = 9, tileV = 5, collection = "005")
+
+###################################################################################
+# change MODIS directory to 'data' drive because of space
+MODISoptions(localArcPath = "/data/data2/data/MODIS/MODIS_ARC/", outDirPath = "/data/data2/data//MODIS/MODIS_ARC/PROCESSES")
+
+# Landcover type 500m
+getHdf(product = "MCD12Q1", begin = "2000001", tileH = 8, tileV = 5, collection = "005")
+getHdf(product = "MCD12Q1", begin = "2000001", tileH = 8, tileV = 6, collection = "005")
+getHdf(product = "MCD12Q1", begin = "2000001", tileH = 9, tileV = 5, collection = "005")
+
+# LST 1000m
+getHdf(product = "MOD11A2", begin = "2000001", tileH = 8, tileV = 5, collection = "005")
+getHdf(product = "MOD11A2", begin = "2000001", tileH = 8, tileV = 6, collection = "005")
+getHdf(product = "MOD11A2", begin = "2000001", tileH = 9, tileV = 5, collection = "005")
+
+# Nadir BRDF-Adjusted Reflectance 500m
+getHdf(product = "MCD43A4", begin = "2000001", tileH = 8, tileV = 5, collection = "005")
+getHdf(product = "MCD43A4", begin = "2000001", tileH = 8, tileV = 6, collection = "005")
+getHdf(product = "MCD43A4", begin = "2000001", tileH = 9, tileV = 5, collection = "005")
+
+
+# Nadir BRDF-QA
+getHdf(product = "MCD43A2", begin = "2000001", tileH = 8, tileV = 5, collection = "005")
+getHdf(product = "MCD43A2", begin = "2000001", tileH = 8, tileV = 6, collection = "005")
+getHdf(product = "MCD43A2", begin = "2000001", tileH = 9, tileV = 5, collection = "005")
+
+
+
+######################################################################################################################################
+#-----Step 3. Define MODIS processing functions
+######################################################################################################################################
+
+#-----------------------------------------------------------------------------------------------------------------
+#note: in the past runGDAL had issues, thus resulting the creation of the custom processing functions. With updates to MODIS? runGDAL appearst to be working again.
+#-------------------Data types
+      # Datatype definition:	minimum possible value,	maximum possible value
+      # LOG1S	FALSE (0)	TRUE (1)
+      # INT1S	-127	127
+      # INT1U	0	255
+      # INT2S	-32,767	32,767
+      # INT2U	0	65,534
+      # INT4S	-2,147,483,647	2,147,483,647
+      # INT4U	0	4,294,967,296
+      # FLT4S	-3.4e+38	3.4e+38
+      # FLT8S	-1.7e+308	1.7e+308
+      #LST data=INT2U; LST QA=INT1U; VI=INT2S; BRDF=INT2U; Landcover=INT1U
+      #Raster data types: ’LOG1S’, ’INT1S’, ’INT2S’,’INT4S’, ’INT8S’, ’INT1U’, ’INT2U’, ’FLT4S’, ’FLT8S’
+      #GDAL data types: Byte, UInt16, Int16, UInt32, Int32, Float32, Float64, CInt16, CInt32, CFloat32 and CFloat64
+      # LOG1S
+      # INT1S	= Int8
+      # INT1U	= UInt8
+      # INT2S	= Int16
+      # INT2U	= UInt16
+      # INT4S	= Int32
+      # INT4U	= UInt32
+      # FLT4S
+      # FLT8S
+
+#---------------------------------------------------------------------------------------------------------------------------------
+#------------Processing function for MOD13 imagery
+mod13_process <- function(input_folder, output_folder, raster, sd.fill, res, shapefile.path) {
+    # res=resolution in meters i.e. 250 or 1000
+
+    s_srs <- "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+    t_srs <- projection(raster)
+
+    # extract the date from the MODIS file name unique(substr(list.files(input_folder,pattern='.hdf',
+    # recursive=TRUE, include.dirs=TRUE), 21, 27))[1]
+    mod13.list <- list()
+    for (i in 1:length(unique(substr(list.files(input_folder, pattern = ".hdf", recursive = TRUE, include.dirs = TRUE),
+        21, 29)))) {
+        mod13.list[[i]] <- grep(paste(as.vector(getTile(raster)$tile), collapse = "|"), as.vector(list.files(path = input_folder,
+            pattern = unique(substr(list.files(input_folder, pattern = ".hdf", recursive = TRUE, include.dirs = TRUE),
+                21, 29))[i], recursive = TRUE, include.dirs = TRUE)), value = TRUE)
+    }
+
+
+    # set up temp files for output.vrt
+    output.vrt <- list()
+    for (i in 1:length(unique(substr(list.files(input_folder, pattern = ".hdf", recursive = TRUE, include.dirs = TRUE),
+        21, 27)))) {
+        output.vrt[[i]] <- paste(tempfile(), ".vrt", sep = "")
+    }
+
+    if (sd.fill == 1) {
+        j <- "250m_16_days_NDVI"
+    } else if (sd.fill == 2) {
+        j <- "250m_16_days_EVI"
+    } else if (sd.fill == 3) {
+        j <- "250m_16 days_VI_Quality"
+    } else if (sd.fill == 4) {
+        j <- "1_km_16_days_red"
+    } else if (sd.fill == 5) {
+        j <- "250m_16_days_NIR"
+    } else if (sd.fill == 6) {
+        j <- "250m_16_days_blue"
+    } else if (sd.fill == 7) {
+        j <- "250m_16_days_SWIR2"
+    } else if (sd.fill == 12) {
+        j <- "250m_16_days_PixRel"
+    } else {
+        j <- "NA"
+    }
+
+    # [1] '1 km 16 days NDVI' '1 km 16 days EVI' '1 km 16 days VI Quality' [4] '1 km 16 days red
+    # reflectance' '1 km 16 days NIR reflectance' '1 km 16 days blue reflectance' [7] '1 km 16 days MIR
+    # reflectance' '1 km 16 days view zenith angle' '1 km 16 days sun zenith angle' [10] '1 km 16 days
+    # relative azimuth angle' '1 km 16 days composite day of the year' '1 km 16 days pixel reliability'
+
+    # implement foreach loop here
+
+    foreach(i = 1:length(mod13.list), .packages = c("gdalUtils", "sp")) %dopar% {
+        gdalbuildvrt(paste0(input_folder, "/", mod13.list[[i]], sep = ""), output.vrt = output.vrt[[i]],
+            sd = sd.fill, separate = FALSE, tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+        gdalwarp(output.vrt[[i]], dstfile = paste0(output_folder, "/", unique(substr(mod13.list[[i]],
+            12, 27)), "_", j, ".tif"), of = "GTiff", s_srs = s_srs, t_srs = t_srs, tr = c(res, res),
+            cutline = shapefile.path, crop_to_cutline = TRUE, dstalpha = TRUE, overwrite = TRUE)
+
+    }
+}
+
+#------------------Definiition of clipping options in gdalwarp
+# # cutline: sets path to shapefile to clip to
+#       cutline='/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp',
+# # these parameters clip the result based on a shapefile area
+#       crop_to_cutline=TRUE, dstalpha=TRUE,
+# # te: clips the raster based on the bbox of the input shapefile
+#       te=c(as.vector(bbox(raster))),
+
+#
+#---------------------------------------------------------------------------------------------------------------------------
+#------------Processing function for all MODIS imagery, need to specify correct sd code and give name (j) for writing
+modis_process <- function(input_folder, output_folder, raster, sd.fill, res, j, shapefile.path) {
+    # res=resolution in meters i.e. 250 or 1000
+
+    s_srs <- "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+    t_srs <- projection(raster)
+
+    # extract the date from the MODIS file name unique(substr(list.files(input_folder,pattern='.hdf',
+    # recursive=TRUE, include.dirs=TRUE), 21, 27))[1]
+    mod.list <- list()
+    for (i in 1:length(unique(substr(list.files(input_folder, pattern = ".hdf", recursive = TRUE, include.dirs = TRUE),
+        21, 29)))) {
+        mod.list[[i]] <- grep(paste(as.vector(getTile(raster)$tile), collapse = "|"), as.vector(list.files(path = input_folder,
+            pattern = unique(substr(list.files(input_folder, pattern = ".hdf", recursive = TRUE, include.dirs = TRUE),
+                21, 29))[i], recursive = TRUE, include.dirs = TRUE)), value = TRUE)
+    }
+
+
+    # set up temp files for output.vrt
+    output.vrt <- list()
+    for (i in 1:length(unique(substr(list.files(input_folder, pattern = ".hdf", recursive = TRUE, include.dirs = TRUE),
+        21, 27)))) {
+        output.vrt[[i]] <- paste(tempfile(), ".vrt", sep = "")
+    }
+
+    # implement foreach loop here
+    foreach(i = 1:length(mod.list), .packages = c("gdalUtils", "sp")) %dopar% {
+        gdalbuildvrt(paste0(input_folder, "/", mod.list[[i]], sep = ""), output.vrt = output.vrt[[i]],
+            sd = sd.fill, separate = FALSE, tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+        gdalwarp(output.vrt[[i]], dstfile = paste0(output_folder, "/", unique(substr(mod.list[[i]], 12,
+            27)), "_", j, ".tif"), of = "GTiff", s_srs = s_srs, t_srs = t_srs, tr = c(res, res), cutline = shapefile.path,
+            crop_to_cutline = TRUE, dstalpha = TRUE, overwrite = TRUE)
+
+    }
+
+}
+
+#
+#----------------------------------------------------------------------------------------------------------------------------
+#-----Process MODIS imagery >250m and resample using gdal
+    #-------Crop to bbox for coarser imagery so it doesnt clip parts of study area
+    #-------res=resolution in meters, i.e. 250 or 1000
+modis_process_resample <- function(input_folder, output_folder, raster, sd.fill, t_res, resample_method,
+    j, data.type) {
+
+    s_srs <- "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+    t_srs <- projection(raster)
+
+    # extract the date from the MODIS file name unique(substr(list.files(input_folder,pattern='.hdf',
+    # recursive=TRUE, include.dirs=TRUE), 21, 27))[1]
+    mod.list <- list()
+    for (i in 1:length(unique(substr(list.files(input_folder, pattern = ".hdf", recursive = TRUE, include.dirs = TRUE),
+        21, 29)))) {
+        mod.list[[i]] <- grep(paste(as.vector(getTile(raster)$tile), collapse = "|"), as.vector(list.files(path = input_folder,
+            pattern = unique(substr(list.files(input_folder, pattern = ".hdf", recursive = TRUE, include.dirs = TRUE),
+                21, 29))[i], recursive = TRUE, include.dirs = TRUE)), value = TRUE)
+    }
+
+    # set up temp files for output.vrt
+    output.vrt <- list()
+    for (i in 1:length(mod.list)) {
+        output.vrt[[i]] <- paste(tempfile(), ".vrt", sep = "")
+    }
+
+    # implement foreach loop here
+    foreach(i = 1:length(mod.list), .packages = c("gdalUtils", "sp")) %dopar% {
+        gdalbuildvrt(paste0(input_folder, "/", mod.list[[i]], sep = ""), output.vrt = output.vrt[[i]],
+            sd = sd.fill, separate = FALSE, tileindex = TRUE, overwrite = TRUE, verbose = TRUE)
+        gdalwarp(output.vrt[[i]], dstfile = paste0(output_folder, "/", unique(substr(mod.list[[i]], 12,
+            27)), "_", j, ".tif"), of = "GTiff", s_srs = s_srs, t_srs = t_srs, tr = c(t_res, t_res),
+            r = resample_method, ot = data.type, dstalpha = TRUE, te = c(as.vector(bbox(raster))), overwrite = TRUE)
+
+    }
+}
+
+
+#----------------------------------------------------------------------------------------------------
+#       Find correct SDS codes for the different MODIS imagery
+#----------------------------------------------------------------------------------------------------
+
+# find out which SDS numbers correspond to which bands
+# MOD13Q1
+getSds(HdfName="MOD13Q1.A2000049.h08v04.005.2006269063040.hdf")
+
+  # $SDSnames
+  # [1] "250m 16 days NDVI"                       [2] "250m 16 days EVI"
+  # [3] "250m 16 days VI Quality"                 [4] "250m 16 days red reflectance"
+  # [5] "250m 16 days NIR reflectance"            [6] "250m 16 days blue reflectance"
+  # [7] "250m 16 days MIR reflectance"            [8] "250m 16 days view zenith angle"
+  # [9] "250m 16 days sun zenith angle"           [10] "250m 16 days relative azimuth angle"
+  # [11] "250m 16 days composite day of the year" [12]"250m 16 days pixel reliability"
+
+#M CD12Q1
+getSds(HdfName="/data/data2/data/MODIS/MODIS_ARC/MODIS/MCD12Q1.005/2001.01.01/MCD12Q1.A2001001.h23v03.005.2011230172229.hdf")
+  # $SDSnames
+  # [1] "Land_Cover_Type_1"                   "Land_Cover_Type_2"
+  # [3] "Land_Cover_Type_3"                   "Land_Cover_Type_4"
+  # [5] "Land_Cover_Type_5"                   "Land_Cover_Type_1_Assessment"
+  # [7] "Land_Cover_Type_2_Assessment"        "Land_Cover_Type_3_Assessment"
+  # [9] "Land_Cover_Type_4_Assessment"        "Land_Cover_Type_5_Assessment"
+  # [11] "Land_Cover_Type_QC"                  "Land_Cover_Type_1_Secondary"
+  # [13] "Land_Cover_Type_1_Secondary_Percent" "LC_Property_1"
+  # [15] "LC_Property_2"                       "LC_Property_3"
+
+# MCD43A4
+getSds(HdfName="/data/data2/data/MODIS/MODIS_ARC/MODIS/MCD43A4.005/2000.02.18/MCD43A4.A2000049.h23v03.005.2006269095154.hdf")
+  # $SDSnames
+  # [1] "Nadir_Reflectance_Band1" "Nadir_Reflectance_Band2" "Nadir_Reflectance_Band3"
+  # [4] "Nadir_Reflectance_Band4" "Nadir_Reflectance_Band5" "Nadir_Reflectance_Band6"
+  # [7] "Nadir_Reflectance_Band7"
+
+getSds(HdfName="/data/data2/data/MODIS/MODIS_ARC/MODIS/MCD43A2.005/2000.02.18/MCD43A2.A2000049.h23v03.005.2006269095153.hdf")
+  # $SDSnames
+  # [1] "BRDF_Albedo_Quality"  "Snow_BRDF_Albedo"   "BRDF_Albedo_Ancillary"  "BRDF_Albedo_Band_Quality"
+
+# MOD11A2
+getSds(HdfName="/data/data2/data/MODIS/MODIS_ARC/MODIS/MOD11A2.005/2000.03.05/MOD11A2.A2000065.h23v03.005.2007176173151.hdf")
+
+  # $SDSnames
+  # [1] "LST_Day_1km"  "QC_Day"  "Day_view_time"   "Day_view_angl"  "LST_Night_1km"  "QC_Night"  "Night_view_time"  "Night_view_angl"
+  # [9] "Emis_31"   "Emis_32"     "Clear_sky_days"   "Clear_sky_nights"
+#------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+######################################################################################################################################
+#-----Step 3. Process MODIS Imagery
+######################################################################################################################################
+
+#----------Run functions to process MODIS imagery
+# Make sure parallel backend in loaded
+getDoParWorkers()  #if not registered then re-register
+  # cl <- startMPIcluster(count = 24)
+  # registerDoMPI(cl)
+  # getDoParWorkers()
+  # closeCluster(cl)
+
+#-------------------- Process MOD13Q1 imagery  ----------------------------------------------------------------------------------------
+
+#set input and output folders
+input_folder <- "/data/data1/R_DATA/MODIS/MODIS_ARC/MODIS/MOD13Q1.005"
+dir.create("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M")
+output_folder <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M"
+# set working directory to input folder
+setwd(input_folder)
+
+# execute MOD13 processing function extract NDVI
+mod13_process(input_folder, output_folder, CO_raster, sd.fill = 1, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp")
+# extract Pixel Reliability
+mod13_process(input_folder, output_folder, CO_raster, sd.fill = 12, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp")
+# extract Red
+mod13_process(input_folder, output_folder, CO_raster, sd.fill = 4, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp")
+# extract SWIR2
+mod13_process(input_folder, output_folder, CO_raster, sd.fill = 7, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp")
+
+
+dir.create("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M")
+output_folder <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M"
+# extract NDVI
+mod13_process(input_folder, output_folder, NM_raster, sd.fill = 1, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp")
+# extract Pixel Reliability
+mod13_process(input_folder, output_folder, NM_raster, sd.fill = 12, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp")
+# extract Red
+mod13_process(input_folder, output_folder, NM_raster, sd.fill = 4, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp")
+# extract SWIR2
+mod13_process(input_folder, output_folder, NM_raster, sd.fill = 7, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp")
+
+
+# extract EVI
+output_folder <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M"
+mod13_process(input_folder, output_folder, CO_raster, sd.fill = 2, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp")
+output_folder <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M"
+mod13_process(input_folder, output_folder, NM_raster, sd.fill = 2, res = 250, shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp")
+
+#######################################################################################################################################
+#-------------------- Process MOD11A2 imagery  ----------------------------------------------------------------------------------------
+#
+# Extract LST and QC
+# set input and output folders
+# input_folder, output_folder, raster, sd.fill, s_res, t_res, resampleFactor, j, shapefile.path
+input_folder <- "/data/data2/data/MODIS/MODIS_ARC/MODIS/MOD11A2.005"
+# dir.create('/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M')
+# dir.create('/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M') LST data=INT2U; LST QA=INT1U;
+# LST data=UInt16; LST QA=byte;
+output_folder <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M"
+modis_process_resample(input_folder, output_folder, CO_raster, sd.fill = 1, t_res = 250, resample_method = "bilinear",
+    j = "LST_Day_250m", data.type = "UInt16")
+modis_process_resample(input_folder, output_folder, CO_raster, sd.fill = 2, t_res = 250, resample_method = "near",
+    j = "QC_Day_250m", data.type = "byte")
+modis_process_resample(input_folder, output_folder, CO_raster, sd.fill = 5, t_res = 250, resample_method = "bilinear",
+    j = "LST_Night_250m", data.type = "UInt16")
+modis_process_resample(input_folder, output_folder, CO_raster, sd.fill = 6, t_res = 250, resample_method = "near",
+    j = "QC_Night_250m", data.type = "byte")
+#runGdal(job='CO_LST_1000M', product='MOD11A2', collection='005', extent=CO_raster, begin='2000001',SDSstring='100010', resamplingType='bilinear')
+#runGdal(job='CO_LST_1000M', product='MOD11A2', collection='005', extent=CO_raster, begin='2000001', SDSstring='010001', resamplingType='near')
+
+# #find and remove files from folders rm.list <- list.files(output_folder,pattern='*QC_Night.tif',
+# recursive=TRUE, include.dirs=TRUE) unlink(paste0(output_folder, '/', rm.list))
+
+output_folder <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M"
+modis_process_resample(input_folder, output_folder, NM_raster, sd.fill = 1, t_res = 250, resample_method = "bilinear",
+    j = "LST_Day_250m", data.type = "UInt16")
+modis_process_resample(input_folder, output_folder, NM_raster, sd.fill = 2, t_res = 250, resample_method = "near",
+    j = "QC_Day_250m", data.type = "byte")
+modis_process_resample(input_folder, output_folder, NM_raster, sd.fill = 5, t_res = 250, resample_method = "bilinear",
+    j = "LST_Night_250m", data.type = "UInt16")
+modis_process_resample(input_folder, output_folder, NM_raster, sd.fill = 6, t_res = 250, resample_method = "near",
+    j = "QC_Night_250m", data.type = "byte")
+
+
+#######################################################################################################################################
+#-------------------- Process MCD12Q1 imagery  ----------------------------------------------------------------------------------------
+#
+#Extract land cover
+#Land Cover Type 1 (IGBP)
+input_folder <- "/data/data2/data/MODIS/MODIS_ARC/MODIS/MCD12Q1.005"
+dir.create("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Landcover_500M")
+dir.create("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Landcover_500M")
+
+output_folder <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Landcover_500M"
+modis_process_resample(input_folder, output_folder, CO_raster, sd.fill = 1, s_res = 500, t_res = 250,
+    resampleFactor = 2, j = "250m_16_days_Cover_T1", shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp",
+    data.type = "UInt8")
+modis_process_resample(input_folder, output_folder, CO_raster, sd.fill = 11, s_res = 500, t_res = 250,
+    resampleFactor = 2, j = "250m_16_days_Cover_QC", shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp",
+    data.type = "UInt8")
+
+output_folder <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Landcover_500M"
+modis_process_resample(input_folder, output_folder, NM, sd.fill = 1, s_res = 500, t_res = 250, resampleFactor = 2,
+    j = "250m_16_days_Cover_T1", shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp",
+    data.type = "UInt8")
+modis_process_resample(input_folder, output_folder, NM, sd.fill = 11, s_res = 500, t_res = 250, resampleFactor = 2,
+    j = "250m_16_days_Cover_QC", shapefile.path = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp",
+    data.type = "UInt8")
+
+#######################################################################################################################################
+#----------------------------Process MCD43A4 imagery-----------------------------------------------------------------------------------
+#
+#Extract NIR and MIR MCD43A4
+runGdal(job="CO_Modis_BRDF", product="MCD43A4", collection='005', extent=CO_raster, begin="2000001", SDSstring="1100011", resamplingType='bilinear')
+runGdal(job="NM_Modis_BRDF", product="MCD43A4", collection='005', extent=NM_raster, begin="2000001", SDSstring="1100011", resamplingType='bilinear')
+
+# Custom extraction method
+  # input_folder <- "/data/data2/data/MODIS/MODIS_ARC/MODIS/MCD43A4.005"
+  # dir.create("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_BRDF_Ref_500M")
+  # dir.create("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_BRDF_Ref_500M")
+  #
+  # output_folder <-"/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_BRDF_Ref_500M"
+  # modis_process_resample(input_folder, output_folder, CO_raster, sd.fill=1, s_res=500, t_res=250, resampleFactor=2, j="250m_16_days_BRDF1_RED", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp", data.type='INT2U')
+  # modis_process_resample(input_folder, output_folder, CO_raster, sd.fill=2, s_res=500, t_res=250, resampleFactor=2, j="250m_16_days_BRDF2_NIR", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp", data.type='INT2U')
+  # modis_process_resample(input_folder, output_folder, CO_raster, sd.fill=6, s_res=500, t_res=250, resampleFactor=2, j="250m_16_days_BRDF6_SWIR1", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp", data.type='INT2U')
+  # modis_process_resample(input_folder, output_folder, CO_raster, sd.fill=7, s_res=500, t_res=250, resampleFactor=2, j="250m_16_days_BRDF7_SWIR2", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp", data.type='INT2U')
+  #
+  # output_folder <-"/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_BRDF_Ref_500M"
+  # modis_process_resample(input_folder, output_folder, NM_raster, sd.fill=1, s_res=500, t_res=250, resampleFactor=2, j="250m_16_days_BRDF1_RED", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp", data.type='INT2U')
+  # modis_process_resample(input_folder, output_folder, NM_raster, sd.fill=2, s_res=500, t_res=250, resampleFactor=2, j="250m_16_days_BRDF2_NIR", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp", data.type='INT2U')
+  # modis_process_resample(input_folder, output_folder, NM_raster, sd.fill=6, s_res=500, t_res=250, resampleFactor=2, j="250m_16_days_BRDF6_SWIR1", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp", data.type='INT2U')
+  # modis_process_resample(input_folder, output_folder, NM_raster, sd.fill=7, s_res=500, t_res=250, resampleFactor=2, j="250m_16_days_BRDF7_SWIR2", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp", data.type='INT2U')
+
+#######################################################################################################################################
+#-------------------------Process MCD43A2 imagery
+#
+#Extract QA MCD43A2
+runGdal(job="CO_Modis_BRDF", product="MCD43A2", collection='005', extent=CO_raster, begin="2000001",  SDSstring="1", resamplingType='near')
+runGdal(job="NM_Modis_BRDF", product="MCD43A2", collection='005', extent=NM_raster, begin="2000001",  SDSstring="1", resamplingType='near')
+
+# Custom extraction method
+  # input_folder <- "/data/data2/data/MODIS/MODIS_ARC/MODIS/MCD43A2.005"
+  # output_folder <-"/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_BRDF_Ref_500M"
+  # modis_process(input_folder, output_folder, CO_raster, sd.fill=1, res=500, j="500m_16_days_BRDF_QA", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area/epaL4_mlra35sel_bndc.shp")
+
+  # output_folder <-"/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_BRDF_Ref_500M"
+  # modis_process(input_folder, output_folder, NM_raster, sd.fill=1, res=500, j="500m_16_days_BRDF_QA", shapefile.path="/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area/Chihauhuan_Study_Area_Boundary.shp")
+
+########################################################################################################################
+#-----Step 4. QA
+########################################################################################################################
+
+# set the path to get the correct data on the source directory:
+# path to imagery sets
+# CO paths"
+path.co.vi <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M"
+path.co.BRDF <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF"
+path.co.landcover <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Landcover_500M"
+path.co.lst <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M"
+
+# NM paths
+path.nm.vi <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M"
+path.nm.BRDF <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF"
+path.nm.landcover <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Landcover_500M"
+path.nm.lst <- "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M"
+
+# CO
+ndvi.co <- preStack(path = path.co.vi, pattern = "*_NDVI.tif$")
+qa.vi.co <- preStack(path = path.co.vi, pattern = "*_PixRel.tif$")
+evi.co <- preStack(path = path.co.vi, pattern = "*_EVI.tif$")
+vi.red.co <- preStack(path = path.co.vi, pattern = "*_red.tif$")
+vi.swir2.co <- preStack(path = path.co.vi, pattern = "*250m_16_days_SWIR2.tif$")
+red.co <- preStack(path = path.co.BRDF, pattern = "*Band1.tif$")
+nir.co <- preStack(path = path.co.BRDF, pattern = "*Band2.tif$")
+swir1.co <- preStack(path = path.co.BRDF, pattern = "*Band6.tif$")
+swir2.co <- preStack(path = path.co.BRDF, pattern = "*Band7.tif$")
+brdf.qa.co <- preStack(path = path.co.BRDF, pattern = "*Quality.tif$")
+landcover.co <- preStack(path = path.co.landcover, pattern = "*_Cover_T1.tif$")
+landcover.qa.co <- preStack(path = path.co.landcover, pattern = "*_Cover_QC.tif$")
+day.lst.co <- preStack(path = path.co.lst, pattern = "*LST_Day_1km.tif$")
+day.qa.co <- preStack(path = path.co.lst, pattern = "*QC_Day_250m.tif$")
+night.lst.co <- preStack(path = path.co.lst, pattern = "*LST_Night_1km.tif$")
+night.qa.co <- preStack(path = path.co.lst, pattern = "*QC_Night_250m.tif$")
+day.lst.co.sub <- day.lst.co[seq(1, length(day.lst.co), by = 2)]
+day.qa.co.sub <- day.qa.co[seq(1, length(day.qa.co), by = 2)]
+night.lst.co.sub <- night.lst.co[seq(1, length(night.lst.co), by = 2)]
+night.qa.co.sub <- night.qa.co[seq(1, length(night.qa.co), by = 2)]
+
+# Subset BRDF 8-day prestack to match 16-day VI
+co.bfdf.list <- unique(substr(list.files(path.co.BRDF, pattern = "Band2.tif", recursive = TRUE, include.dirs = TRUE),
+    10, 16))
+co.vi.list <- unique(substr(list.files(path.co.vi, pattern = "*_red.tif$", recursive = TRUE, include.dirs = TRUE),
+    10, 16))
+co.vi.index <- na.omit(cbind(seq(1, length(co.bfdf.list), 1), match(co.bfdf.list, co.vi.list, incomparables = TRUE)))[,
+    1]
+red.co.sub <- red.co[co.vi.index]
+nir.co.sub <- nir.co[co.vi.index]
+swir1.co.sub <- swir1.co[co.vi.index]
+swir2.co.sub <- swir2.co[co.vi.index]
+brdf.qa.co.sub <- brdf.qa.co[co.vi.index]
+
+# NM
+ndvi.nm <- preStack(path = path.nm.vi, pattern = "*_NDVI.tif$")
+qa.vi.nm <- preStack(path = path.nm.vi, pattern = "*_PixRel.tif$")
+evi.nm <- preStack(path = path.nm.vi, pattern = "*_EVI.tif$")
+vi.red.nm <- preStack(path = path.nm.vi, pattern = "*_red.tif$")
+vi.swir2.nm <- preStack(path = path.nm.vi, pattern = "*250m_16_days_SWIR2.tif$")
+red.nm <- preStack(path = path.nm.BRDF, pattern = "*Band1.tif$")
+nir.nm <- preStack(path = path.nm.BRDF, pattern = "*Band2.tif$")
+swir1.nm <- preStack(path = path.nm.BRDF, pattern = "*Band6.tif$")
+swir2.nm <- preStack(path = path.nm.BRDF, pattern = "*Band7.tif$")
+brdf.qa.nm <- preStack(path = path.nm.BRDF, pattern = "*Quality.tif$")
+landcover.nm <- preStack(path = path.nm.landcover, pattern = "*_Cover_T1.tif$")
+landcover.qa.nm <- preStack(path = path.nm.landcover, pattern = "*_Cover_QC.tif$")
+day.lst.nm <- preStack(path = path.nm.lst, pattern = "*_LST_Day_250m.tif$")
+day.qa.nm <- preStack(path = path.nm.lst, pattern = "*_QC_Day_250m.tif$")
+night.lst.nm <- preStack(path = path.nm.lst, pattern = "*_LST_Night_250m.tif$")
+night.qa.nm <- preStack(path = path.nm.lst, pattern = "*_QC_Night_250m.tif$")
+day.lst.nm.sub <- day.lst.nm[seq(1, length(day.lst.nm), by = 2)]
+day.qa.nm.sub <- day.qa.nm[seq(1, length(day.qa.nm), by = 2)]
+night.lst.nm.sub <- night.lst.nm[seq(1, length(night.lst.nm), by = 2)]
+night.qa.nm.sub <- night.qa.nm[seq(1, length(night.qa.nm), by = 2)]
+
+# #Find missing scenes from BRDF QA and band lists
+    # nm.bfdf.qa.list<-unique(substr(list.files(path.nm.BRDF,pattern='Quality.tif', recursive=TRUE,
+    # include.dirs=TRUE), 10, 16))
+    # nm.bfdf.nir.list<-unique(substr(list.files(path.nm.BRDF,pattern='Band2.tif', recursive=TRUE,
+    # include.dirs=TRUE), 10, 16))
+    # match(nm.bfdf.qa.list, nm.bfdf.nir.list, incomparables=TRUE)
+
+    # co.bfdf.qa.list<-unique(substr(list.files(path.co.BRDF,pattern='BRDF_QA.tif', recursive=TRUE,
+    # include.dirs=TRUE), 10, 16))
+    # co.bfdf.nir.list<-unique(substr(list.files(path.co.BRDF,pattern='NIR.tif', recursive=TRUE,
+    # include.dirs=TRUE), 10, 16)) match(co.bfdf.qa.list, co.bfdf.nir.list, incomparables=TRUE)
+
+
+# Subset BRDF 8-day prestack to match 16-day VI
+nm.bfdf.list <- unique(substr(list.files(path.nm.BRDF, pattern = "Band2.tif", recursive = TRUE, include.dirs = TRUE),
+    10, 16))
+nm.vi.list <- unique(substr(list.files(path.nm.vi, pattern = "*_red.tif$", recursive = TRUE, include.dirs = TRUE),
+    10, 16))
+nm.vi.index <- na.omit(cbind(seq(1, length(nm.bfdf.list), 1), match(nm.bfdf.list, nm.vi.list, incomparables = TRUE)))[,
+    1]
+nm.vi.index.mod <- mixedsort(c(nm.vi.index, 319))
+red.nm.sub <- red.nm[nm.vi.index.mod]  ###Missing 2007017 b/c no QA layer, add scene 319 = 2007025 instead
+nir.nm.sub <- nir.nm[nm.vi.index.mod]
+swir1.nm.sub <- swir1.nm[nm.vi.index.mod]
+swir2.nm.sub <- swir2.nm[nm.vi.index.mod]
+brdf.qa.nm.sub <- brdf.qa.nm[nm.vi.index.mod]
+
+CO_NDVI_list <- unstack(stack(ndvi.co, bands = 1))
+CO_QA_VI_list <- unstack(stack(qa.vi.co, bands = 1))
+CO_EVI_list <- unstack(stack(evi.co, bands = 1))
+CO_VI_RED_list <- unstack(stack(vi.red.co, bands = 1))
+CO_VI_SWIR2_list <- unstack(stack(vi.swir2.co, bands = 1))
+CO_RED_list <- unstack(stack(red.co.sub, bands = 1))
+CO_NIR_list <- unstack(stack(nir.co.sub, bands = 1))
+CO_SWIR1_list <- unstack(stack(swir1.co.sub, bands = 1))
+CO_SWIR2_list <- unstack(stack(swir2.co.sub, bands = 1))
+CO_BRDF_QA_list <- unstack(stack(brdf.qa.co.sub, bands = 1))
+CO_Landcover_list <- unstack(stack(landcover.co, bands = 1))
+CO_Landcover_QA_list <- unstack(stack(landcover.qa.co, bands = 1))
+CO_LST_Day_Sub_list <- unstack(stack(day.lst.co.sub, bands = 1))
+CO_LST_QA_Day_Sub_list <- unstack(stack(day.qa.co.sub, bands = 1))
+CO_LST_Night_Sub_list <- unstack(stack(night.lst.co.sub, bands = 1))
+CO_LST_QA_Night_Sub_list <- unstack(stack(night.qa.co.sub, bands = 1))
+
+NM_NDVI_list <- unstack(stack(ndvi.nm, bands = 1))
+NM_QA_VI_list <- unstack(stack(qa.vi.nm, bands = 1))
+NM_EVI_list <- unstack(stack(evi.nm, bands = 1))
+NM_VI_RED_list <- unstack(stack(vi.red.nm, bands = 1))
+NM_VI_SWIR2_list <- unstack(stack(vi.swir2.nm, bands = 1))
+NM_RED_list <- unstack(stack(red.nm.sub, bands = 1))
+NM_NIR_list <- unstack(stack(nir.nm.sub, bands = 1))
+NM_SWIR1_list <- unstack(stack(swir1.nm.sub, bands = 1))
+NM_SWIR2_list <- unstack(stack(swir2.nm.sub, bands = 1))
+NM_BRDF_QA_list <- unstack(stack(brdf.qa.nm.sub, bands = 1))
+NM_Landcover_list <- unstack(stack(landcover.nm, bands = 1))
+NM_Landcover_QA_list <- unstack(stack(landcover.qa.nm, bands = 1))
+NM_LST_Day_Sub_list <- unstack(stack(day.lst.nm.sub, bands = 1))
+NM_LST_QA_Day_Sub_list <- unstack(stack(day.qa.nm.sub, bands = 1))
+NM_LST_Night_Sub_list <- unstack(stack(night.lst.nm.sub, bands = 1))
+NM_LST_QA_Night_Sub_list <- unstack(stack(night.qa.nm.sub, bands = 1))
+
+
+
+
+####################################  MODIS VI timeseries  ###################################################
+##### Create VI Mask
+#CO mask
+vi.mask <- CO_QA_VI_list
+vi.mask.final <- vi.mask
+vi.mask.final <- foreach(i = 1:length(vi.mask), .packages = c("raster", "rgdal")) %dopar% {
+    vi.mask.layer <- vi.mask[[i]]
+    vi.mask.layer[vi.mask.layer == 2] <- NA
+    vi.mask.layer[vi.mask.layer == 3] <- NA
+    vi.mask.layer[vi.mask.layer == 0] <- 1
+    vi.mask.final[[i]] <- vi.mask.layer
+}
+writeRaster(stack(vi.mask.final), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_QA_Mask_final.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT1U")
+co.vi.mask.final <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_QA_Mask_final.tif")
+co.vi.mask.final.list <- unstack(vi.mask.final)
+
+# NM mask
+nm.vi.mask <- NM_QA_VI_list
+nm.vi.mask.final <- nm.vi.mask
+nm.vi.mask.final <- foreach(i = 1:length(nm.vi.mask), .packages = c("raster", "rgdal")) %dopar% {
+    nm.vi.mask.layer <- nm.vi.mask[[i]]
+    nm.vi.mask.layer[nm.vi.mask.layer == 2] <- NA
+    nm.vi.mask.layer[nm.vi.mask.layer == 3] <- NA
+    nm.vi.mask.layer[nm.vi.mask.layer == 0] <- 1
+    nm.vi.mask.final[[i]] <- nm.vi.mask.layer
+}
+writeRaster(stack(nm.vi.mask.final), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_QA_Mask_final.tif",
+    format = "GTiff", overwrite = T, bylayer = TRUE, dataType = "INT1U")
+nm.vi.mask.final <- stack(mixedsort(preStack(path = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/",
+    pattern = "*NM_VI_QA_Mask_final*")))
+nm.vi.mask.final.list <- unstack(nm.vi.mask.final)
+
+### Create timestamp
+co.date <- (orgTime(ndvi.co, nDays = 16, begin = "2000049", pillow = 0))
+nm.date <- (orgTime(ndvi.nm, nDays = 16, begin = "2000049", pillow = 0))
+co.date.lst <- (orgTime(day.lst.co.sub, nDays = 16, begin = "2000049", pillow = 0))
+nm.date.lst <- (orgTime(day.lst.nm.sub, nDays = 16, begin = "2000049", pillow = 0))
+
+##############################################################################################################
+######### functions for infilling
+##############################################################################################################
+foreach.raster.timeseries.run <- function(x, filename, fun, dates, rescale) {
+    outDate <- dates$inputLayerDates
+    out <- brick(x, nl = length(outDate), values = FALSE)
+    out <- writeStart(out, filename, format = "GTiff", overwrite = TRUE)
+    bs <- blockSize(x)
+    pb <- pbCreate(bs$n)
+    bs <- blockSize(x, minblocks = bs$n * 2)
+    pb <- txtProgressBar(min = 1, max = bs$n, style = 3)
+    todisk <- TRUE
+    for (i in 1:bs$n) {
+        v <- getValuesBlock(x, row = bs$row[i], nrows = bs$nrows[i])
+        vv <- array(, dim = c(nrow(v), length(outDate)))
+        vvv <- foreach.raster.timeseries(v, vv, fun, outDate, rescale)
+        vvvv <- do.call("rbind", lapply(vvv, array))
+        out <- writeValues(out, vvvv, bs$row[i])
+        setTxtProgressBar(pb, i)
+    }
+    out <- writeStop(out)
+    return(out)
+    close(pb)
+}
+
+
+foreach.raster.timeseries <- function(v, vv, fun, outDate, rescale) {
+    vv <- foreach(i = 1:nrow(v), .packages = c("bfast", "zoo", "MODIS", "signal", "imputeTS", "data.table", "raster")) %dopar%
+        {
+            vv[i, ] <- t(apply(t(as.matrix(v[i, ])), 1, fun, outDate, rescale))
+        }
+
+}
+
+
+# bfastts infill function
+# set up to remove the first three observations from each timeseries
+bfastts.infill <- function(data, outDate, rescale) {
+    if (length(na.omit(data)) < 2) {
+        tso <- data
+    } else {
+        z <- zoo(data * rescale, outDate)
+
+        # This runs a sgolay filter to smooth out the time series
+        tso <- ts(sgolayfilt(na.interpolation(as.numeric(z), option = "stine")), frequency = (365.25/16),
+            start = start(z))  ####modified part of bfastts code to account for leap year
+    }
+    return(tso)
+}
+
+###########################################################################################################################################
+
+#--------------------------------------------- CO mask and infill
+################# Execute Mask NDVI
+CO_NDVI_mask <- CO_NDVI_list
+CO_NDVI_mask <- foreach(i = 1:length(CO_NDVI_list), .packages = c("raster", "rgdal")) %dopar% {
+    CO_NDVI_mask[[i]] <- mask(CO_NDVI_list[[i]], vi.mask.final.list[[i]])
+}
+writeRaster(stack(CO_NDVI_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_NDVI_Mask.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+CO_NDVI_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_NDVI_Mask.tif")
+CO_NDVI_mask <-unstack(CO_NDVI_mask)
+
+stime <- system.time({
+    CO_infill.ndvi <- foreach.raster.timeseries.run(CO_NDVI_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_NDVI_infill.tif",
+        fun = bfastts.infill, dates = co.date, rescale = 1e-04)
+})[3]
+stime
+CO_infill.ndvi <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_NDVI_infill.tif")
+################# Execute Mask EVI
+CO_EVI_mask <- CO_EVI_list
+CO_EVI_mask <- foreach(i = 1:length(CO_EVI_list), .packages = c("raster", "rgdal")) %dopar% {
+    CO_EVI_mask[[i]] <- mask(CO_EVI_list[[i]], vi.mask.final.list[[i]])
+}
+writeRaster(stack(CO_EVI_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_EVI_Mask.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+CO_EVI_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_EVI_Mask.tif")
+CO_EVI_mask <- unstack(CO_EVI_mask)
+
+stime <- system.time({
+    CO_infill.evi <- foreach.raster.timeseries.run(CO_EVI_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_EVI_infill.tif",
+        fun = bfastts.infill, dates = co.date, rescale = 1e-04)
+})[3]
+stime
+CO_infill.evi <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_EVI_infill.tif")
+################# Execute Mask Red
+CO_VI_RED_mask <- CO_VI_RED_list
+CO_VI_RED_mask <- foreach(i = 1:length(CO_VI_RED_list), .packages = c("raster", "rgdal")) %dopar% {
+    CO_VI_RED_mask[[i]] <- mask(CO_VI_RED_list[[i]], vi.mask.final.list[[i]])
+}
+writeRaster(stack(CO_VI_RED_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_RED_Mask.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+CO_VI_RED_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_RED_Mask.tif")
+CO_VI_RED_mask <- unstack(CO_VI_RED_mask)
+
+stime <- system.time({
+    CO_infill.vi.red <- foreach.raster.timeseries.run(CO_VI_RED_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_RED_infill.tif",
+        fun = bfastts.infill, dates = co.date, rescale = 1e-04)
+})[3]
+stime
+CO_infill.vi.red <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_RED_infill.tif")
+################# Execute Mask SWIR2
+CO_VI_SWIR2_mask <- CO_VI_SWIR2_list
+CO_VI_SWIR2_mask <- foreach(i = 1:length(CO_VI_SWIR2_list), .packages = c("raster", "rgdal")) %dopar%
+    {
+        CO_VI_SWIR2_mask[[i]] <- mask(CO_VI_SWIR2_list[[i]], vi.mask.final.list[[i]])
+    }
+writeRaster(stack(CO_VI_SWIR2_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_SWIR2_Mask.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+CO_VI_SWIR2_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_SWIR2_Mask.tif")
+CO_VI_SWIR2_mask <- unstack(CO_VI_SWIR2_mask)
+
+stime <- system.time({
+    CO_infill.vi.swir2 <- foreach.raster.timeseries.run(CO_VI_SWIR2_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_SWIR2_infill.tif",
+        fun = bfastts.infill, dates = co.date, rescale = 1e-04)
+})[3]
+stime
+CO_infill.vi.swir2 <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_VI_SWIR2_infill.tif")
+# NM mask and infill
+################# Execute Mask NDVI
+NM_NDVI_mask <- NM_NDVI_list
+NM_NDVI_mask <- foreach(i = 1:length(NM_NDVI_list), .packages = c("raster", "rgdal")) %dopar% {
+    NM_NDVI_mask[[i]] <- mask(NM_NDVI_list[[i]], nm.vi.mask.final.list[[i]])
+}
+writeRaster(stack(NM_NDVI_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_NDVI_Mask.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+NM_NDVI_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_NDVI_Mask.tif")
+NM_NDVI_mask <-unstack(NM_NDVI_mask)
+
+stime <- system.time({
+    NM_infill.ndvi <- foreach.raster.timeseries.run(NM_NDVI_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_NDVI_infill.tif",
+        fun = bfastts.infill, dates = nm.date, rescale = 1e-04)
+})[3]
+stime
+NM_infill.ndvi <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_NDVI_infill.tif")
+################# Execute Mask EVI
+NM_EVI_mask <- NM_EVI_list
+NM_EVI_mask <- foreach(i = 1:length(NM_EVI_list), .packages = c("raster", "rgdal")) %dopar% {
+    NM_EVI_mask[[i]] <- mask(NM_EVI_list[[i]], nm.vi.mask.final.list[[i]])
+}
+writeRaster(stack(NM_EVI_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_EVI_Mask.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+NM_EVI_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_EVI_Mask.tif")
+NM_EVI_mask <- unstack(NM_EVI_mask)
+
+stime <- system.time({
+    NM_infill.evi <- foreach.raster.timeseries.run(NM_EVI_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_EVI_infill.tif",
+        fun = bfastts.infill, dates = nm.date, rescale = 1e-04)
+})[3]
+stime
+NM_infill.evi <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_EVI_infill.tif")
+################# Execute Mask Red
+NM_VI_RED_mask <- NM_VI_RED_list
+NM_VI_RED_mask <- foreach(i = 1:length(NM_VI_RED_list), .packages = c("raster", "rgdal")) %dopar% {
+    NM_VI_RED_mask[[i]] <- mask(NM_VI_RED_list[[i]], nm.vi.mask.final.list[[i]])
+}
+writeRaster(stack(NM_VI_RED_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_RED_Mask.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+NM_VI_RED_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_RED_Mask.tif")
+NM_VI_RED_mask <- unstack(NM_VI_RED_mask)
+
+stime <- system.time({
+    NM_infill.vi.red <- foreach.raster.timeseries.run(NM_VI_RED_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_RED_infill.tif",
+        fun = bfastts.infill, dates = nm.date, rescale = 1e-04)
+})[3]
+stime
+NM_infill.vi.red <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_RED_infill.tif")
+################# Execute Mask SWIR2
+NM_VI_SWIR2_mask <- NM_VI_SWIR2_list
+NM_VI_SWIR2_mask <- foreach(i = 1:length(NM_VI_SWIR2_list), .packages = c("raster", "rgdal")) %dopar%
+    {
+        NM_VI_SWIR2_mask[[i]] <- mask(NM_VI_SWIR2_list[[i]], nm.vi.mask.final.list[[i]])
+    }
+writeRaster(stack(NM_VI_SWIR2_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_SWIR2_Mask.tif",
+    format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+NM_VI_SWIR2_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_SWIR2_Mask.tif")
+NM_VI_SWIR2_mask <- unstack(NM_VI_SWIR2_mask)
+
+stime <- system.time({
+    NM_infill.vi.swir2 <- foreach.raster.timeseries.run(NM_VI_SWIR2_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_SWIR2_infill.tif",
+        fun = bfastts.infill, dates = nm.date, rescale = 1e-04)
+})[3]
+stime
+NM_infill.vi.swir2 <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_VI_SWIR2_infill.tif")
+#######################################################################################################################################################################
+
+##############################################################################################################
+##### RASTER BRDF QA PROCESSING  #################################################
+##############################################################################################################
+
+#### CO Study area
+##############################################################################################################
+
+######### create mask
+    stime <- system.time({
+        CO_BRDF_QA_mask <- CO_BRDF_QA_list
+        CO_BRDF_QA_mask <- foreach(i = 1:length(CO_BRDF_QA_list), .packages = c("raster")) %dopar% {
+            CO_BRDF_QA_list.i <- CO_BRDF_QA_list[[i]]
+            CO_BRDF_QA_list.i[CO_BRDF_QA_list.i == 0] <- 1
+            CO_BRDF_QA_list.i[is.na(CO_BRDF_QA_list.i)] <- 0
+            CO_BRDF_QA_mask[[i]] <- CO_BRDF_QA_list.i
+        }
+    })[3]
+    stime
+
+    writeRaster(stack(CO_BRDF_QA_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_BRDF_QA_mask.tif",
+        format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2U")
+    CO_BRDF_QA_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_BRDF_QA_mask.tif")
+    CO_BRDF_QA_mask <- unstack(CO_BRDF_QA_mask)
+#########----------------------------------------------------------------------------------------------
+######### SWIR1 masking and infilling
+    ###
+    ################# Mask SWIR1
+    stime2 <- system.time({
+        CO_SWIR1_mask <- CO_SWIR1_list
+        CO_SWIR1_mask <- foreach(i = 1:length(CO_SWIR1_mask), .packages = c("raster", "rgdal")) %dopar% {
+            CO_SWIR1_mask[[i]] <- mask(CO_SWIR1_mask[[i]], (CO_BRDF_QA_mask[[i]]))
+        }
+
+        writeRaster(stack(CO_SWIR1_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR1_Mask.tif",
+            format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2U")
+
+    })[3]
+    stime2
+    CO_SWIR1_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR1_Mask.tif")
+
+    ################# Infill SWIR1
+    stime3 <- system.time({
+        CO_SWIR1_infill <- foreach.raster.timeseries.run(CO_SWIR1_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR1_infill.tif",
+            fun = bfastts.infill, dates = co.date, rescale = 1e-04)
+    })[3]
+    stime3
+
+    CO_SWIR1_infill <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR1_infill.tif")
+#-----------------------------------------------------------------------------------------------------------
+######### SWIR2 masking and infilling
+    ###
+    ################# Mask SWIR2
+    stime2 <- system.time({
+        CO_SWIR2_mask <- CO_SWIR2_list
+        CO_SWIR2_mask <- foreach(i = 1:length(CO_SWIR2_mask), .packages = c("raster", "rgdal")) %do% {
+            CO_SWIR2_mask[[i]] <- mask(CO_SWIR2_mask[[i]], (CO_BRDF_QA_mask[[i]]))
+        }
+
+        writeRaster(stack(CO_SWIR2_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR2_Mask.tif",
+            format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2U")
+
+    })[3]
+    stime2
+    CO_SWIR2_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR2_Mask.tif")
+    ################# Infill SWIR2
+    stime3 <- system.time({
+        CO_SWIR2_infill <- foreach.raster.timeseries.run(CO_SWIR2_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR2_infill.tif",
+            fun = bfastts.infill, dates = co.date, rescale = 1e-04)
+    })[3]
+    stime3
+    CO_SWIR2_infill <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Modis_BRDF/CO_SWIR2_infill.tif")
+#-----------------------------------------------------------------------------------------------------------
+# unstack raster bricks
+    CO_SWIR1_infill_list <- unstack(CO_SWIR1_infill)
+    CO_infill.vi.swir2_list <- unstack(CO_infill.vi.swir2)
+    CO_infill.vi.red_list <- unstack(CO_infill.vi.red)
+# Calculate SATVI on raster brick
+    CO_SATVI_infill <- CO_infill.vi.red_list
+    CO_SATVI_infill <- foreach(i = 1:length(CO_infill.vi.red_list), .packages = c("raster", "rgdal")) %dopar%
+        {
+            CO_SATVI_infill[[i]] <- (((CO_SWIR1_infill_list[[i]] - CO_infill.vi.red_list[[i]])/(CO_SWIR1_infill_list[[i]] +
+                CO_infill.vi.red_list[[i]] + 0.5)) * (1 + 0.5) - (CO_infill.vi.swir2_list[[i]]/2))
+
+        }
+    writeRaster(stack(CO_SATVI_infill), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_SATVI_Infill.tif",
+        format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+    CO_SATVI_infill <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_VI_250M/CO_SATVI_Infill.tif")
+
+##############################################################################################################
+##############################################################################################################
+
+#### NM Study area
+##############################################################################################################
+
+######### create mask
+    stime <- system.time({
+        NM_BRDF_QA_mask <- NM_BRDF_QA_list
+        NM_BRDF_QA_mask <- foreach(i = 1:length(NM_BRDF_QA_list), .packages = c("raster")) %dopar% {
+            NM_BRDF_QA_list.i <- NM_BRDF_QA_list[[i]]
+            NM_BRDF_QA_list.i[NM_BRDF_QA_list.i == 0] <- 1
+            NM_BRDF_QA_list.i[is.na(NM_BRDF_QA_list.i)] <- 0
+            NM_BRDF_QA_mask[[i]] <- NM_BRDF_QA_list.i
+        }
+    })[3]
+    stime
+
+    writeRaster(stack(NM_BRDF_QA_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_BRDF_QA_mask.tif",
+        format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2U")
+    NM_BRDF_QA_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_BRDF_QA_mask.tif")
+
+######## SWIR1 masking and infilling
+    ###
+    ################# Mask SWIR1
+    stime2 <- system.time({
+        NM_SWIR1_mask <- NM_SWIR1_list
+        NM_SWIR1_mask <- foreach(i = 1:length(NM_SWIR1_mask), .packages = c("raster", "rgdal")) %do% {
+            NM_SWIR1_mask[[i]] <- mask(NM_SWIR1_mask[[i]], (NM_BRDF_QA_mask[[i]]))
+        }
+
+        writeRaster(stack(NM_SWIR1_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_SWIR1_Mask.tif",
+            format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2U")
+        NM_SWIR1_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_SWIR1_Mask.tif")
+    })[3]
+    stime2
+    ################# Infill SWIR1
+    stime3 <- system.time({
+        NM_SWIR1_infill <- foreach.raster.timeseries.run(NM_SWIR1_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_SWIR1_infill.tif",
+            fun = bfastts.infill, dates = nm.date, rescale = 1e-04)
+    })[3]
+    stime3
+##########################################################################################################################
+
+######################## SWIR2 masking and infilling
+    ################# Mask SWIR2
+    stime2 <- system.time({
+        NM_SWIR2_mask <- NM_SWIR2_list
+        NM_SWIR2_mask <- foreach(i = 1:length(NM_SWIR2_mask), .packages = c("raster", "rgdal")) %do% {
+            NM_SWIR2_mask[[i]] <- mask(NM_SWIR2_mask[[i]], (NM_BRDF_QA_mask[[i]]))
+        }
+
+        writeRaster(stack(NM_SWIR2_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_SWIR2_Mask.tif",
+            format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2U")
+        NM_SWIR2_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_SWIR2_Mask.tif")
+    })[3]
+    stime2
+    ################# Infill SWIR2
+    stime3 <- system.time({
+        NM_SWIR2_infill <- foreach.raster.timeseries.run(NM_SWIR2_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Modis_BRDF/NM_SWIR2_infill.tif",
+            fun = bfastts.infill, dates = nm.date, rescale = 1e-04)
+    })[3]
+    stime3
+
+#-----------------------------------------------------------------------------------------------------------
+# unstack raster bricks
+    NM_SWIR1_infill_list <- unstack(NM_SWIR1_infill)
+    NM_infill.vi.swir2_list <- unstack(NM_infill.vi.swir2)
+    NM_infill.vi.red_list <- unstack(NM_infill.vi.red)
+# Calculate SATVI on raster brick
+    NM_SATVI_infill <- NM_infill.vi.red_list
+    NM_SATVI_infill <- foreach(i = 1:length(NM_infill.vi.red_list), .packages = c("raster", "rgdal")) %dopar%
+        {
+            NM_SATVI_infill[[i]] <- mask((((NM_SWIR1_infill_list[[i]] - NM_infill.vi.red_list[[i]])/(NM_SWIR1_infill_list[[i]] +
+                NM_infill.vi.red_list[[i]] + 0.5)) * (1 + 0.5) - (NM_infill.vi.swir2_list[[i]]/2)), vi.mask.final.list[[i]])
+
+        }
+    writeRaster(stack(NM_SATVI_infill), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_SATVI_Infill.tif",
+        format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2S")
+    NM_SATVI_infill <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_VI_250M/NM_SATVI_Infill.tif")
+
+
+#############################################################################################################
+###############               Landcover              ########################################################
+#############################################################################################################
+
+
+## Landcover Error table
+QC_Data_land <- data.frame(Integer_Value = 0:255, Bit7 = NA, Bit6 = NA, Bit5 = NA, Bit4 = NA, Bit3 = NA,
+    Bit2 = NA, Bit1 = NA, Bit0 = NA, QA_word1 = NA, QA_word2 = NA, QA_word3 = NA)
+
+for (i in QC_Data_land$Integer_Value) {
+    AsInt <- as.integer(intToBits(i)[1:8])
+    QC_Data_land[i + 1, 2:9] <- AsInt[8:1]
+}
+
+# Quality
+QC_Data_land$QA_word1[QC_Data_land$Bit1 == 0 & QC_Data_land$Bit0 == 0] <- "Good Quality"
+QC_Data_land$QA_word1[QC_Data_land$Bit1 == 0 & QC_Data_land$Bit0 == 1] <- "Other Quality"
+QC_Data_land$QA_word1[QC_Data_land$Bit1 == 1 & QC_Data_land$Bit0 == 0] <- "No Pixel,clouds"
+QC_Data_land$QA_word1[QC_Data_land$Bit1 == 1 & QC_Data_land$Bit0 == 1] <- "No Pixel, Other QA"
+
+# Qarters sinced updated
+QC_Data_land$QA_word2[QC_Data_land$Bit3 == 0 & QC_Data_land$Bit2 == 0] <- "0 Quarter"
+QC_Data_land$QA_word2[QC_Data_land$Bit3 == 0 & QC_Data_land$Bit2 == 1] <- "1 Quarter"
+QC_Data_land$QA_word2[QC_Data_land$Bit3 == 1 & QC_Data_land$Bit2 == 0] <- "2 Quarter"
+QC_Data_land$QA_word2[QC_Data_land$Bit3 == 1 & QC_Data_land$Bit2 == 1] <- "3 Quarter"
+
+# Land-water mask
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 0 & QC_Data_land$Bit6 == 0 & QC_Data_land$Bit5 == 0 & QC_Data_land$Bit4 ==
+    0] <- "Shallow Ocean"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 0 & QC_Data_land$Bit6 == 0 & QC_Data_land$Bit5 == 0 & QC_Data_land$Bit4 ==
+    1] <- "Land"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 0 & QC_Data_land$Bit6 == 0 & QC_Data_land$Bit5 == 1 & QC_Data_land$Bit4 ==
+    0] <- "Ocean coastlines"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 0 & QC_Data_land$Bit6 == 0 & QC_Data_land$Bit5 == 1 & QC_Data_land$Bit4 ==
+    1] <- "Shallow inland"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 0 & QC_Data_land$Bit6 == 1 & QC_Data_land$Bit5 == 0 & QC_Data_land$Bit4 ==
+    0] <- "Ephemeral water"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 0 & QC_Data_land$Bit6 == 1 & QC_Data_land$Bit5 == 0 & QC_Data_land$Bit4 ==
+    1] <- "Deep inland water"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 0 & QC_Data_land$Bit6 == 1 & QC_Data_land$Bit5 == 1 & QC_Data_land$Bit4 ==
+    0] <- "Continental Ocean"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 0 & QC_Data_land$Bit6 == 1 & QC_Data_land$Bit5 == 1 & QC_Data_land$Bit4 ==
+    1] <- "Deep Ocean"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 1 & QC_Data_land$Bit6 == 0 & QC_Data_land$Bit5 == 0 & QC_Data_land$Bit4 ==
+    0] <- "NA"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 1 & QC_Data_land$Bit6 == 0 & QC_Data_land$Bit5 == 0 & QC_Data_land$Bit4 ==
+    1] <- "NA"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 1 & QC_Data_land$Bit6 == 0 & QC_Data_land$Bit5 == 1 & QC_Data_land$Bit4 ==
+    0] <- "NA"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 1 & QC_Data_land$Bit6 == 0 & QC_Data_land$Bit5 == 1 & QC_Data_land$Bit4 ==
+    1] <- "NA"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 1 & QC_Data_land$Bit6 == 1 & QC_Data_land$Bit5 == 0 & QC_Data_land$Bit4 ==
+    0] <- "NA"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 1 & QC_Data_land$Bit6 == 1 & QC_Data_land$Bit5 == 0 & QC_Data_land$Bit4 ==
+    1] <- "NA"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 1 & QC_Data_land$Bit6 == 1 & QC_Data_land$Bit5 == 1 & QC_Data_land$Bit4 ==
+    0] <- "NA"
+QC_Data_land$QA_word3[QC_Data_land$Bit7 == 1 & QC_Data_land$Bit6 == 1 & QC_Data_land$Bit5 == 1 & QC_Data_land$Bit4 ==
+    1] <- "NA"
+#-----------------------------------------------------------------------------------------------------------
+
+# Function to QA and filter MODIS timeseries
+modis.time.filter.landcover <- function(data, qa) {
+    data.filter <- matrix(data = NA, nrow = nrow(data), ncol = ncol(data))
+    for (i in 1:nrow(data)) {
+        data.i <- data[i, ]
+        qa.i <- qa[i, ]
+        data.mask <- data.i * qa.i
+        if (length(na.omit(data.mask)) < 2) {
+            data.filter[i, ] <- data.mask
+        } else {
+            data.filter[i, ] <- na.interpolation(as.numeric(data.i * qa.i), option = "stine")
+        }
+    }
+    return(data.filter)
+}
+
+# Landcover QA filter
+#------Landcover classes
+# Water, Evergreen Needleleaf forest, Evergreen Broadleaf forest, Deciduous Needleleaf forest, Deciduous
+# Broadleaf forest, Mixed forest, Closed shrublands, Open shrublands, Woody savannas, Savannas, Grasslands,
+# Permanent wetlands, Croplands, Urban, Cropland/Natural vegetation mosaic, Snow and ice, Barren or
+# sparsely vegetated, Unclassified, Fill Value
+
+land.class <- data.table(rbind(c(0, "WA"), c(1, "ENF"), c(2, "EBF"), c(3, "DNF"), c(4, "DBF"), c(5, "MF"),
+    c(6, "CS"), c(7, "OS"), c(8, "WS"), c(9, "SA"), c(10, "GR"), c(11, "PW"), c(12, "CR"), c(13, "UR"),
+    c(14, "CNVM"), c(15, "SI"), c(16, "BSV"), c(254, "UN"), c(255, "FV")))
+
+
+
+
+names(land.class) <- c("ID", "Cover")
+land.class <- data.frame(land.class)
+land.class$ID <- as.numeric(land.class$ID)
+
+#-----------------------------------------------------------------------------------------------------------
+#### CO landcover QA filtering ############
+
+# Point filtering
+# get unique QA values
+co.landcover.qa.unique <- unique(as.vector(co.points.landcover.qa))
+co.landcover.qa.unique[is.na(co.landcover.qa.unique)] <- 0
+# now subset QA_Data to extract only relevant QA integers
+co.landcover.qa.unique <- subset(QC_Data_land, Integer_Value %in% co.landcover.qa.unique)
+# select all with good quality
+co.VI.QA <- subset(co.landcover.qa.unique, QA_word1 == "Good Quality" | QA_word1 == "Other Quality")
+co.QA.int <- co.VI.QA$Integer_Value
+co.landcover.qa.mask <- co.points.landcover.qa
+co.landcover.qa.mask[is.na(co.landcover.qa.mask)] <- 0
+# First loop assigns all good pixels a value of 1 based on previous selection
+for (i in 1:length(co.landcover.qa.mask)) {
+
+    for (j in 1:length(co.QA.int)) {
+        co.landcover.qa.mask[[i]][co.landcover.qa.mask[[i]] == co.QA.int[j]] <- 1
+
+    }
+}
+# Second loop assigns all values greater than 1 to NA
+for (i in 1:length(co.landcover.qa.mask)) {
+    co.landcover.qa.mask[[i]][co.landcover.qa.mask[[i]] > 1] <- NA
+}
+
+co.landcover <- modis.time.filter.landcover(co.points.landcover, co.landcover.qa.mask)
+
+###### NOTE: I've decided not to use QA filtering of landcover data b/c there is no way to infill values
+###### and although certain pixels may have a higher uncertertanty, it is better than lots of holes with
+###### NA values
+
+# Using dummies library for one hot encoding:
+co.landcover.2009 <- co.points.landcover[, 9]
+co.landcover.2009 <- data.frame(co.landcover.2009)
+names(co.landcover.2009) <- c("ID")
+co.landcover.2009.names <- join(land.class, co.landcover.2009, by = "ID", type = "right")
+co.landcover.dummy <- dummy.data.frame(co.landcover.2009.names, names = c("Cover"), sep = "_")[, -1]
+
+#-----------------------------------------------------------------------------------------------------------
+#### NM landcover QA filtering ############
+
+#get unique QA values
+nm.landcover.qa.unique <- unique(as.vector(nm.points.landcover.qa))
+nm.landcover.qa.unique[is.na(nm.landcover.qa.unique)] <- 0
+# now subset QA_Data to extract only relevant QA integers
+nm.landcover.qa.unique <- subset(QC_Data_land, Integer_Value %in% nm.landcover.qa.unique)
+# select all with good quality
+nm.VI.QA <- subset(nm.landcover.qa.unique, QA_word1 == "Good Quality" | QA_word1 == "Other Quality")
+nm.QA.int <- nm.VI.QA$Integer_Value
+nm.landcover.qa.mask <- nm.points.landcover.qa
+nm.landcover.qa.mask[is.na(nm.landcover.qa.mask)] <- 0
+# First loop assigns all good pixels a value of 1 based on previous selection
+for (i in 1:length(nm.landcover.qa.mask)) {
+
+    for (j in 1:length(nm.QA.int)) {
+        nm.landcover.qa.mask[[i]][nm.landcover.qa.mask[[i]] == nm.QA.int[j]] <- 1
+
+    }
+}
+# Second loop assigns all values greater than 1 to NA
+for (i in 1:length(nm.landcover.qa.mask)) {
+    nm.landcover.qa.mask[[i]][nm.landcover.qa.mask[[i]] > 1] <- NA
+}
+
+nm.landcover <- modis.time.filter.landcover(nm.points.landcover, nm.landcover.qa.mask)
+
+###### NOTE: I've decided not to use QA filtering of landcover data b/c there is no way to infill values
+###### and although certain pixels may have a higher uncertertanty, it is better than lots of holes with
+###### NA values
+# Using dummies library for one hot encoding:
+nm.landcover.2009 <- nm.points.landcover[, 9]
+nm.landcover.2009 <- data.frame(nm.landcover.2009)
+names(nm.landcover.2009) <- c("ID")
+nm.landcover.2009.names <- join(land.class, nm.landcover.2009, by = "ID", type = "right")
+nm.landcover.dummy <- dummy.data.frame(nm.landcover.2009.names, names = c("Cover"), sep = "_")[, -1]
+
+#-----------------------------------------------------------------------------------------------------------
+### Landcover Raster Layers
+co_landcover_raster.layer <- layerize(CO_Landcover_list[[9]], filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Landcover_500M/CO_landcover_layers.tif",
+    format = "GTiff", overwrite = T)
+names(co_landcover_raster.layer) <- land.class[, 2]
+names(co_landcover_raster.layer) <- paste0("Cover_", names(co_landcover_raster.layer))
+co_landcover_raster.layer <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_Landcover_500M/CO_landcover_layers.tif")
+
+nm_landcover_raster.layer <- layerize(NM_Landcover_list[[9]], filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Landcover_500M/NM_landcover_layers.tif",
+    format = "GTiff", overwrite = T)
+names(nm_landcover_raster.layer) <- land.class[, 2]
+names(nm_landcover_raster.layer) <- paste0("Cover_", names(nm_landcover_raster.layer))
+nm_landcover_raster.layer <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_Landcover_500M/NM_landcover_layers.tif")
+
+##############################################################################################################
+############                               LST                                      ##########################
+##############################################################################################################
+# LST Error table
+QC_Data <- data.frame(Integer_Value = 0:255, Bit7 = NA, Bit6 = NA, Bit5 = NA, Bit4 = NA, Bit3 = NA, Bit2 = NA,
+    Bit1 = NA, Bit0 = NA, QA_word1 = NA, QA_word2 = NA, QA_word3 = NA, QA_word4 = NA)
+
+for (i in QC_Data$Integer_Value) {
+    AsInt <- as.integer(intToBits(i)[1:8])
+    QC_Data[i + 1, 2:9] <- AsInt[8:1]
+}
+
+# VI Quality
+QC_Data$QA_word1[QC_Data$Bit1 == 0 & QC_Data$Bit0 == 0] <- "VI GOOD"
+QC_Data$QA_word1[QC_Data$Bit1 == 0 & QC_Data$Bit0 == 1] <- "VI Produced,Other Quality"
+QC_Data$QA_word1[QC_Data$Bit1 == 1 & QC_Data$Bit0 == 0] <- "No Pixel,clouds"
+QC_Data$QA_word1[QC_Data$Bit1 == 1 & QC_Data$Bit0 == 1] <- "No Pixel, Other QA"
+
+# VI Usefullness
+QC_Data$QA_word2[QC_Data$Bit3 == 0 & QC_Data$Bit2 == 0] <- "Good Quality"
+QC_Data$QA_word2[QC_Data$Bit3 == 0 & QC_Data$Bit2 == 1] <- "Other Quality"
+QC_Data$QA_word2[QC_Data$Bit3 == 1 & QC_Data$Bit2 == 0] <- "TBD"
+QC_Data$QA_word2[QC_Data$Bit3 == 1 & QC_Data$Bit2 == 1] <- "TBD"
+
+# Emis Error flag
+QC_Data$QA_word3[QC_Data$Bit5 == 0 & QC_Data$Bit4 == 0] <- "Avg Emissivigy error <0.01"
+QC_Data$QA_word3[QC_Data$Bit5 == 0 & QC_Data$Bit4 == 1] <- "Avg Emissivigy error <0.02"
+QC_Data$QA_word3[QC_Data$Bit5 == 1 & QC_Data$Bit4 == 0] <- "Avg Emissivigy error <0.04"
+QC_Data$QA_word3[QC_Data$Bit5 == 1 & QC_Data$Bit4 == 1] <- "Avg Emissivigy error >0.04"
+
+# LST Error flag
+QC_Data$QA_word4[QC_Data$Bit7 == 0 & QC_Data$Bit6 == 0] <- "Avg LST error <1K"
+QC_Data$QA_word4[QC_Data$Bit7 == 0 & QC_Data$Bit6 == 1] <- "Avg LST error <2K"
+QC_Data$QA_word4[QC_Data$Bit7 == 1 & QC_Data$Bit6 == 0] <- "Avg LST error <3K"
+QC_Data$QA_word4[QC_Data$Bit7 == 1 & QC_Data$Bit6 == 1] <- "Avg LST error >3K"
+#-----------------------------------------------------------------------------------------------------------
+
+
+#####################################################################################################################
+################                LST RASTER FILTERING             ##########################################
+####################################################################################################################
+
+#-----------------------------------------------------------------------------------------------------------
+#----------------------------------- LST CO Day QA filter raster -------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
+
+# extract unique QA values from raster brick
+stime1 <- system.time({
+    CO_LST_QA_Day_unique <- foreach(i = 1:length(CO_LST_QA_Day_Sub_list), .combine = "c", .packages = c("raster",
+        "rgdal")) %dopar% {
+        unique(CO_LST_QA_Day_list[[i]])
+    }
+
+    # final list of unique QA integers from image brick
+    CO_LST_QA_Day_unique.final <- unique(CO_LST_QA_Day_unique)
+
+    # now subset QA_Data to extract only relevant QA integers
+    CO_QC_Data_Day <- subset(QC_Data, Integer_Value %in% CO_LST_QA_Day_unique.final)
+
+    ## Now subset based on the most important QA variables select all with VI quality of 00
+    CO.LST.good.Day <- subset(CO_QC_Data_Day, QA_word1 == "VI GOOD")
+
+    # select subset of VI Usefullness
+    CO.VI.okay.day <- subset(subset(CO_QC_Data_Day, QA_word1 == "VI Produced,Other Quality"), QA_word4 ==
+        "Avg LST error <1K" | QA_word4 == "Avg LST error <2K" | QA_word4 == "Avg LST error <3K")
+
+    # combine good and okay integer values and then assign to a vector.
+    CO.LST.QA.day <- rbind(CO.LST.good.Day, CO.VI.okay.day)
+    CO.LST.QA.day.int <- CO.LST.QA.day$Integer_Value
+    CO.LST.QA.day.bad.int <- setdiff(CO_QC_Data_Day$Integer_Value, CO.LST.QA.day.int)
+    co.rep.matrix.day1 <- as.matrix(data.frame(CO.LST.QA.day.int, CO.LST.QA.day.int, rep.int(1, length(CO.LST.QA.day.int))))
+    co.rep.matrix.day2 <- as.matrix(data.frame(CO.LST.QA.day.bad.int, CO.LST.QA.day.bad.int, rep(NA,
+        length(CO.LST.QA.day.bad.int))))
+    co.rep.matrix.day <- rbind(c(NA, NA, 1), co.rep.matrix.day1, co.rep.matrix.day2)
+
+})[3]
+stime1
+
+stime2 <- system.time({
+    CO_LST_QA_Day_QA <- CO_LST_QA_Day_list
+    CO_LST_QA_Day_QA <- foreach(i = 1:length(CO_LST_QA_Day_QA), .packages = c("raster", "rgdal")) %dopar%
+        {
+            CO_LST_QA_Day_QA[[i]] <- reclassify(CO_LST_QA_Day_QA[[i]], co.rep.matrix.day, right = NA,
+                filename = paste0("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_QA_Day_reclass",
+                  "_", i, ".tif"), format = "GTiff", dataType = "INT1U", overwrite = T)
+        }
+})[3]
+stime2
+
+## Final loop creates mask to mask out bad pixels This loop uses the foreach fucntion in a cluster
+## configuration and thus requires that the raster data be in a list format so that it can subset the
+## data
+
+################# Mask LST
+stime3 <- system.time({
+    CO_LST_Day_mask <- CO_LST_Day_Sub_list
+    CO_LST_Day_mask <- foreach(i = 1:length(CO_LST_Day_mask), .packages = c("raster", "rgdal")) %dopar%
+        {
+            CO_LST_Day_mask[[i]] <- mask(CO_LST_Day_mask[[i]], (CO_LST_QA_Day_QA[[i]]))
+        }
+
+
+    writeRaster(stack(CO_LST_Day_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Day_Mask.tif",
+        format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2U")
+    CO_LST_Day_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Day_Mask.tif")
+})[3]
+stime3
+
+################# Infill LST
+stime4 <- system.time({
+    CO_LST_Day_infill <- foreach.raster.timeseries.run(CO_LST_Day_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Day_infill.tif",
+        fun = bfastts.infill, dates = co.date.lst, rescale = 0.02)
+})[3]
+stime4
+CO_LST_Day_infill <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Day_infill.tif")
+#-----------------------------------------------------------------------------------------------------------
+#----------------------------------- LST CO Night QA filter raster -----------------------------------------
+#-----------------------------------------------------------------------------------------------------------
+
+#extract unique QA values from raster brick
+stime1 <- system.time({
+    CO_LST_QA_Night_unique <- foreach(i = 1:length(CO_LST_QA_Night_Sub_list), .combine = "c", .packages = c("raster",
+        "rgdal")) %dopar% {
+        unique(CO_LST_QA_Night_list[[i]])
+    }
+
+    # final list of unique QA integers from image brick
+    CO_LST_QA_Night_unique.final <- unique(CO_LST_QA_Night_unique)
+
+    # now subset QA_Data to extract only relevant QA integers
+    CO_QC_Data_Night <- subset(QC_Data, Integer_Value %in% CO_LST_QA_Night_unique.final)
+
+    ## Now subset based on the most important QA variables select all with VI quality of 00
+    CO.LST.good.Night <- subset(CO_QC_Data_Night, QA_word1 == "VI GOOD")
+
+    # select subset of VI Usefullness
+    CO.VI.okay.night <- subset(subset(CO_QC_Data_Night, QA_word1 == "VI Produced,Other Quality"), QA_word4 ==
+        "Avg LST error <1K" | QA_word4 == "Avg LST error <2K" | QA_word4 == "Avg LST error <3K")
+
+    # combine good and okay integer values and then assign to a vector.
+    CO.LST.QA.night <- rbind(CO.LST.good.Night, CO.VI.okay.night)
+    CO.LST.QA.night.int <- CO.LST.QA.night$Integer_Value
+    CO.LST.QA.night.bad.int <- setdiff(CO_QC_Data_Night$Integer_Value, CO.LST.QA.night.int)
+    co.rep.matrix.night1 <- as.matrix(data.frame(CO.LST.QA.night.int, CO.LST.QA.night.int, rep.int(1,
+        length(CO.LST.QA.night.int))))
+    co.rep.matrix.night2 <- as.matrix(data.frame(CO.LST.QA.night.bad.int, CO.LST.QA.night.bad.int, rep(NA,
+        length(CO.LST.QA.night.bad.int))))
+    co.rep.matrix.night <- rbind(c(NA, NA, 1), co.rep.matrix.night1, co.rep.matrix.night2)
+
+})[3]
+stime1
+
+stime2 <- system.time({
+    CO_LST_QA_Night_QA <- CO_LST_QA_Night_Sub_list
+    CO_LST_QA_Night_QA <- foreach(i = 1:length(CO_LST_QA_Night_QA), .packages = c("raster", "rgdal")) %dopar%
+        {
+            CO_LST_QA_Night_QA[[i]] <- reclassify(CO_LST_QA_Night_QA[[i]], co.rep.matrix.night, right = NA,
+                filename = paste0("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_QA_Night_reclass",
+                  "_", i, ".tif"), format = "GTiff", dataType = "INT1U", overwrite = T)
+        }
+})[3]
+stime2
+
+## Final loop creates mask to mask out bad pixels This loop uses the foreach fucntion in a cluster
+## configuration and thus requires that the raster data be in a list format so that it can subset the
+## data
+
+################# Mask LST
+stime3 <- system.time({
+    CO_LST_Night_mask <- CO_LST_Night_Sub_list
+    CO_LST_Night_mask <- foreach(i = 1:length(CO_LST_Night_mask), .packages = c("raster", "rgdal")) %dopar%
+        {
+            CO_LST_Night_mask[[i]] <- mask(CO_LST_Night_mask[[i]], (CO_LST_QA_Night_QA[[i]]))
+        }
+
+
+    writeRaster(stack(CO_LST_Night_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Night_Mask.tif",
+        format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", dataType = "INT2U")
+    CO_LST_Night_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Night_Mask.tif")
+})[3]
+stime3
+
+################# Infill LST
+stime4 <- system.time({
+    CO_LST_Night_infill <- foreach.raster.timeseries.run(CO_LST_Night_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Night_infill.tif",
+        fun = bfastts.infill, dates = co.date.lst, rescale = 0.02)
+})[3]
+stime4
+CO_LST_Night_infill <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/CO_LST_1000M/CO_LST_Night_infill.tif")
+################# Difference
+CO_LST_Dif_infill <- CO_LST_Day_infill - CO_LST_Night_infill
+
+CO_LST_Day_infill_list <- unstack(CO_LST_Day_infill)
+CO_LST_Night_infill_list <- unstack(CO_LST_Night_infill)
+CO_LST_Dif_infill <- CO_LST_Night_list
+
+CO_LST_Dif_infill <- foreach(i = 1:length(CO_LST_Night_mask), .packages = c("raster", "rgdal")) %dopar%
+    {
+        CO_LST_Dif_infill[[i]] <- overlay(CO_LST_Day_infill_list[[i]], CO_LST_Night_infill_list[[i]],
+            fun = function(r1, r2) {
+                return(r1 - r2)
+            })
+    }
+
+##################################################################################################################
+#-----------------------------------------------------------------------------------------------------------
+#----------------------------------- LST NM Day QA filter raster -------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
+
+#extract unique QA values from raster brick
+stime1 <- system.time({
+    NM_LST_QA_Day_unique <- foreach(i = 1:length(NM_LST_QA_Day_Sub_list), .combine = "c", .packages = c("raster",
+        "rgdal")) %dopar% {
+        unique(NM_LST_QA_Day_list[[i]])
+    }
+
+    # final list of unique QA integers from image brick
+    NM_LST_QA_Day_unique.final <- unique(NM_LST_QA_Day_unique)
+
+    # now subset QA_Data to extract only relevant QA integers
+    NM_QC_Data_Day <- subset(QC_Data, Integer_Value %in% NM_LST_QA_Day_unique.final)
+
+    ## Now subset based on the most important QA variables select all with VI quality of 00
+    NM.LST.good.Day <- subset(NM_QC_Data_Day, QA_word1 == "VI GOOD")
+
+    # select subset of VI Usefullness
+    NM.VI.okay.day <- subset(subset(NM_QC_Data_Day, QA_word1 == "VI Produced,Other Quality"), QA_word4 ==
+        "Avg LST error <1K" | QA_word4 == "Avg LST error <2K" | QA_word4 == "Avg LST error <3K")
+
+    # combine good and okay integer values and then assign to a vector.
+    NM.LST.QA.day <- rbind(NM.LST.good.Day, NM.VI.okay.day)
+    NM.LST.QA.day.int <- NM.LST.QA.day$Integer_Value
+    NM.LST.QA.day.bad.int <- setdiff(NM_QC_Data_Day$Integer_Value, NM.LST.QA.day.int)
+    nm.rep.matrix.day1 <- as.matrix(data.frame(NM.LST.QA.day.int, NM.LST.QA.day.int, rep.int(1, length(NM.LST.QA.day.int))))
+    nm.rep.matrix.day2 <- as.matrix(data.frame(NM.LST.QA.day.bad.int, NM.LST.QA.day.bad.int, rep(NA,
+        length(NM.LST.QA.day.bad.int))))
+    nm.rep.matrix.day <- rbind(c(NA, NA, 1), nm.rep.matrix.day1, nm.rep.matrix.day2)
+
+})[3]
+stime1
+
+stime2 <- system.time({
+    NM_LST_QA_Day_QA <- NM_LST_QA_Day_Sub_list
+    NM_LST_QA_Day_QA <- foreach(i = 1:length(NM_LST_QA_Day_QA), .packages = c("raster", "rgdal")) %dopar%
+        {
+            NM_LST_QA_Day_QA[[i]] <- reclassify(NM_LST_QA_Day_QA[[i]], nm.rep.matrix.day, right = NA,
+                filename = paste0("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_QA_Day_reclass",
+                  "_", i, ".tif"), format = "GTiff", dataType = "INT1U", overwrite = T)
+        }
+})[3]
+stime2
+
+NM_LST_QA_Day_QA <- unstack(stack(mixedsort(paste0("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/",
+    list.files(path = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/", pattern = "*Day_reclass",
+        recursive = TRUE)))))
+
+## Final loop creates mask to mask out bad pixels This loop uses the foreach fucntion in a cluster
+## configuration and thus requires that the raster data be in a list format so that it can subset the
+## data
+
+################# Mask LST
+stime3 <- system.time({
+    NM_LST_Day_mask <- NM_LST_Day_Sub_list
+    NM_LST_Day_mask <- foreach(i = 1:length(NM_LST_Day_mask), .packages = c("raster", "rgdal")) %dopar%
+        {
+            NM_LST_Day_mask[[i]] <- mask(NM_LST_Day_mask[[i]], (NM_LST_QA_Day_QA[[i]]))
+        }
+
+    writeRaster(stack(NM_LST_Day_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Day_Mask.tif",
+        format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", datatype = "INT2U", progress = "text")
+    NM_LST_Day_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Day_Mask.tif")
+})[3]
+stime3
+################# Infill LST
+stime4 <- system.time({
+    NM_LST_Day_infill <- foreach.raster.timeseries.run(NM_LST_Day_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Day_infill.tif",
+        fun = bfastts.infill, dates = nm.date.lst, rescale = 0.02)
+})[3]
+stime4
+NM_LST_Day_infill <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Day_infill.tif")
+#save workspace
+save.image("/data/data2/data/CO_NM_Ecosite_mlr.RData")
+
+#-----------------------------------------------------------------------------------------------------------
+#----------------------------------- LST NM Night QA filter raster -----------------------------------------
+#-----------------------------------------------------------------------------------------------------------
+
+# extract unique QA values from raster brick
+stime1 <- system.time({
+    NM_LST_QA_Night_unique <- foreach(i = 1:length(NM_LST_QA_Night_Sub_list), .combine = "c", .packages = c("raster",
+        "rgdal")) %dopar% {
+        unique(NM_LST_QA_Night_list[[i]])
+    }
+
+    # final list of unique QA integers from image brick
+    NM_LST_QA_Night_unique.final <- unique(NM_LST_QA_Night_unique)
+
+    # now subset QA_Data to extract only relevant QA integers
+    NM_QC_Data_Night <- subset(QC_Data, Integer_Value %in% NM_LST_QA_Night_unique.final)
+
+    ## Now subset based on the most important QA variables select all with VI quality of 00
+    NM.LST.good.Night <- subset(NM_QC_Data_Night, QA_word1 == "VI GOOD")
+
+    # select subset of VI Usefullness
+    NM.VI.okay.night <- subset(subset(NM_QC_Data_Night, QA_word1 == "VI Produced,Other Quality"), QA_word4 ==
+        "Avg LST error <1K" | QA_word4 == "Avg LST error <2K" | QA_word4 == "Avg LST error <3K")
+
+    # combine good and okay integer values and then assign to a vector.
+    NM.LST.QA.night <- rbind(NM.LST.good.Night, NM.VI.okay.night)
+    NM.LST.QA.night.int <- NM.LST.QA.night$Integer_Value
+    NM.LST.QA.night.bad.int <- setdiff(NM_QC_Data_Night$Integer_Value, NM.LST.QA.night.int)
+    nm.rep.matrix.night1 <- as.matrix(data.frame(NM.LST.QA.night.int, NM.LST.QA.night.int, rep.int(1,
+        length(NM.LST.QA.night.int))))
+    nm.rep.matrix.night2 <- as.matrix(data.frame(NM.LST.QA.night.bad.int, NM.LST.QA.night.bad.int, rep(NA,
+        length(NM.LST.QA.night.bad.int))))
+    nm.rep.matrix.night <- rbind(c(NA, NA, 1), nm.rep.matrix.night1, nm.rep.matrix.night2)
+
+})[3]
+stime1
+
+stime2 <- system.time({
+    NM_LST_QA_Night_QA <- NM_LST_QA_Night_Sub_list
+    NM_LST_QA_Night_QA <- foreach(i = 1:length(NM_LST_QA_Night_QA), .packages = c("raster", "rgdal")) %dopar%
+        {
+            NM_LST_QA_Night_QA[[i]] <- reclassify(NM_LST_QA_Night_QA[[i]], nm.rep.matrix.night, right = NA,
+                filename = paste0("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_QA_Night_reclass",
+                  "_", i, ".tif"), format = "GTiff", dataType = "INT1U", overwrite = T)
+        }
+})[3]
+stime2
+
+## Final loop creates mask to mask out bad pixels This loop uses the foreach fucntion in a cluster
+## configuration and thus requires that the raster data be in a list format so that it can subset the
+## data
+
+################# Mask LST
+stime3 <- system.time({
+    NM_LST_Night_mask <- NM_LST_Night_Sub_list
+    NM_LST_Night_mask <- foreach(i = 1:length(NM_LST_Night_mask), .packages = c("raster", "rgdal")) %dopar%
+        {
+            NM_LST_Night_mask[[i]] <- mask(NM_LST_Night_mask[[i]], (NM_LST_QA_Night_QA[[i]]))
+        }
+
+    writeRaster(stack(NM_LST_Night_mask), filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Night_Mask.tif",
+        format = "GTiff", overwrite = T, options = "INTERLEAVE=BAND", datatype = "INT2U", progress = "text")
+    NM_LST_Night_mask <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Night_Mask.tif")
+
+})[3]
+stime3
+################# Infill LST
+stime4 <- system.time({
+    NM_LST_Night_infill <- foreach.raster.timeseries.run(NM_LST_Night_mask, filename = "/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Night_infill.tif",
+        fun = bfastts.infill, dates = nm.date.lst, rescale = 0.02)
+})[3]
+stime4
+NM_LST_Night_infill <- brick("/data/data2/data/MODIS/MODIS_ARC/PROCESSES/NM_LST_1000M/NM_LST_Night_infill.tif")
+################# Difference
+NM_LST_Dif_infill <- NM_LST_Day_infill - NM_LST_Night_infill
+
+NM_LST_Day_infill_list <- unstack(NM_LST_Day_infill)
+NM_LST_Night_infill_list <- unstack(NM_LST_Night_infill)
+NM_LST_Dif_infill <- NM_LST_Night_list
+
+NM_LST_Dif_infill <- foreach(i = 1:length(NM_LST_Night_mask), .packages = c("raster", "rgdal")) %dopar%
+{
+  NM_LST_Dif_infill[[i]] <- overlay(NM_LST_Day_infill_list[[i]], NM_LST_Night_infill_list[[i]],
+                                    fun = function(r1, r2) {
+                                      return(r1 - r2)
+                                    })
+}
+
+########################################################################################################################
+
+# functions to remove temp files
+removeTmpFiles(h = 0)
+# clear memory
+gc()
+
+
+###############################################################################################
+##----------- Now we join extracted MODIS data at points with ESG designations --------------##
+###############################################################################################
+
+#create esite df with site index
+co.site_id <- data.frame(seq(1, nrow(co.points), 1), co.points$ESG_ID)
+names(co.site_id) <- c("Index", "esite")
+
+nm.site_id <- data.frame(seq(1, nrow(nm.points), 1), nm.points$ESG_ID)
+names(nm.site_id) <- c("Index", "esite")
+#-----------------------------------------------------------------------------------------------------------
+
+# create NDVI df with site index
+co.NDVI.df <- data.frame(seq(1, nrow(co.points), 1), co.timeseries.ndvi)
+names(co.NDVI.df) <- c("Index", paste0("T", seq(1, ncol(co.timeseries.ndvi), 1)))
+co.esite.spec.ndvi <- data.frame(join(co.site_id, co.NDVI.df, by = "Index"))
+
+nm.NDVI.df <- data.frame(seq(1, nrow(nm.points), 1), nm.timeseries.ndvi)
+names(nm.NDVI.df) <- c("Index", paste0("T", seq(1, ncol(nm.timeseries.ndvi), 1)))
+nm.esite.spec.ndvi <- data.frame(join(nm.site_id, nm.NDVI.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create EVI df with site index
+co.EVI.df <- data.frame(seq(1, nrow(co.points), 1), co.timeseries.evi)
+names(co.EVI.df) <- c("Index", paste0("T", seq(1, ncol(co.timeseries.evi), 1)))
+co.esite.spec.evi <- data.frame(join(co.site_id, co.EVI.df, by = "Index"))
+
+nm.EVI.df <- data.frame(seq(1, nrow(nm.points), 1), nm.timeseries.evi)
+names(nm.EVI.df) <- c("Index", paste0("T", seq(1, ncol(nm.timeseries.evi), 1)))
+nm.esite.spec.evi <- data.frame(join(nm.site_id, nm.EVI.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# SATVI df with site index
+co.esite.SATVI
+#-----------------------------------------------------------------------------------------------------------
+
+# create EVI df with site index
+co.landcover.df <- data.frame(seq(1, nrow(co.points), 1), co.landcover.dummy)
+names(co.landcover.df) <- c("Index", names(co.landcover.df[-1]))
+co.esite.landcover <- data.frame(join(co.site_id, co.landcover.df, by = "Index"))
+
+nm.landcover.df <- data.frame(seq(1, nrow(nm.points), 1), nm.landcover.dummy)
+names(nm.landcover.df) <- c("Index", names(nm.landcover.df[-1]))
+nm.esite.landcover <- data.frame(join(nm.site_id, nm.landcover.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create VI Red df with site index
+co.VI.RED.df <- data.frame(seq(1, nrow(co.points), 1), co.timeseries.vi.red)
+names(co.VI.RED.df) <- c("Index", paste0("T", seq(1, ncol(co.timeseries.vi.red), 1)))
+co.esite.spec.vi.red <- data.frame(join(co.site_id, co.VI.RED.df, by = "Index"))
+
+nm.VI.RED.df <- data.frame(seq(1, nrow(nm.points), 1), nm.timeseries.vi.red)
+names(nm.VI.RED.df) <- c("Index", paste0("T", seq(1, ncol(nm.timeseries.vi.red), 1)))
+nm.esite.spec.vi.red <- data.frame(join(nm.site_id, nm.VI.RED.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create BRDF Red df with site index
+co.RED.df <- data.frame(seq(1, nrow(co.points), 1), co.timeseries.red)
+names(co.RED.df) <- c("Index", paste0("T", seq(1, ncol(co.timeseries.red), 1)))
+co.esite.spec.red <- data.frame(join(co.site_id, co.RED.df, by = "Index"))
+
+nm.RED.df <- data.frame(seq(1, nrow(nm.points), 1), nm.timeseries.red)
+names(nm.RED.df) <- c("Index", paste0("T", seq(1, ncol(nm.timeseries.red), 1)))
+nm.esite.spec.red <- data.frame(join(nm.site_id, nm.RED.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create BRDF NIR df with site index
+co.NIR.df <- data.frame(seq(1, nrow(co.points), 1), co.timeseries.nir)
+names(co.NIR.df) <- c("Index", paste0("T", seq(1, ncol(co.timeseries.nir), 1)))
+co.esite.spec.nir <- data.frame(join(co.site_id, co.NIR.df, by = "Index"))
+
+nm.NIR.df <- data.frame(seq(1, nrow(nm.points), 1), nm.timeseries.nir)
+names(nm.NIR.df) <- c("Index", paste0("T", seq(1, ncol(nm.timeseries.nir), 1)))
+nm.esite.spec.nir <- data.frame(join(nm.site_id, nm.NIR.df, by = "Index"))
+
+#-----------------------------------------------------------------------------------------------------------
+
+# create BRDF SWIR1 df with site index
+co.swir1.df <- data.frame(seq(1, nrow(co.points), 1), co.timeseries.swir1)
+names(co.swir1.df) <- c("Index", paste0("T", seq(1, ncol(co.timeseries.swir1), 1)))
+co.esite.spec.swir1 <- data.frame(join(co.site_id, co.swir1.df, by = "Index"))
+
+nm.swir1.df <- data.frame(seq(1, nrow(nm.points), 1), nm.timeseries.swir1)
+names(nm.swir1.df) <- c("Index", paste0("T", seq(1, ncol(nm.timeseries.swir1), 1)))
+nm.esite.spec.swir1 <- data.frame(join(nm.site_id, nm.swir1.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create VI swir2 df with site index
+co.VI.swir2.df <- data.frame(seq(1, nrow(co.points), 1), co.timeseries.vi.swir2)
+names(co.VI.swir2.df) <- c("Index", paste0("SWIR2_", seq(1, ncol(co.timeseries.vi.swir2), 1)))
+co.esite.spec.vi.swir2 <- data.frame(join(co.site_id, co.VI.swir2.df, by = "Index"))
+
+nm.VI.swir2.df <- data.frame(seq(1, nrow(nm.points), 1), nm.timeseries.vi.swir2)
+names(nm.VI.swir2.df) <- c("Index", paste0("SWIR2_", seq(1, ncol(nm.timeseries.vi.swir2), 1)))
+nm.esite.spec.vi.swir2 <- data.frame(join(nm.site_id, nm.VI.swir2.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create BRDF swir2 df with site index
+co.swir2.df <- data.frame(seq(1, nrow(co.points), 1), co.timeseries.swir2)
+names(co.swir2.df) <- c("Index", paste0("T", seq(1, ncol(co.timeseries.swir2), 1)))
+co.esite.spec.swir2 <- data.frame(join(co.site_id, co.swir2.df, by = "Index"))
+
+nm.swir2.df <- data.frame(seq(1, nrow(nm.points), 1), nm.timeseries.swir2)
+names(nm.swir2.df) <- c("Index", paste0("T", seq(1, ncol(nm.timeseries.swir2), 1)))
+nm.esite.spec.swir2 <- data.frame(join(nm.site_id, nm.swir2.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create Landcover df with site index
+co.landcover.df2 <- data.frame(seq(1, nrow(co.points), 1), co.landcover.df)
+names(co.landcover.df2)[1] <- c("Index")
+co.esite.landcover <- data.frame(join(co.site_id, co.landcover.df2, by = "Index"))
+# co.esite.landcover[] <- lapply(co.esite.landcover, factor)
+
+nm.landcover.df2 <- data.frame(seq(1, nrow(nm.points), 1), nm.landcover.df)
+names(nm.landcover.df2)[1] <- c("Index")
+nm.esite.landcover <- data.frame(join(nm.site_id, nm.landcover.df2, by = "Index"))
+# nm.esite.landcover[] <- lapply(nm.esite.landcover, factor) create LST day df with site index
+#-----------------------------------------------------------------------------------------------------------
+
+# create LST day df with site index
+co.LST.day.df <- data.frame(seq(1, nrow(co.points), 1), co.lst.day)
+names(co.LST.day.df) <- c("Index", paste0("Tday_", seq(1, ncol(co.lst.day), 1)))
+co.esite.LST.day <- data.frame(join(co.site_id, co.LST.day.df, by = "Index"))
+
+nm.LST.day.df <- data.frame(seq(1, nrow(nm.points), 1), nm.lst.day)
+names(nm.LST.day.df) <- c("Index", paste0("Tday_", seq(1, ncol(nm.lst.day), 1)))
+nm.esite.LST.day <- data.frame(join(nm.site_id, nm.LST.day.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create LST night df with site index
+co.LST.night.df <- data.frame(seq(1, nrow(co.points), 1), co.lst.night)
+names(co.LST.night.df) <- c("Index", paste0("Tnight_", seq(1, ncol(co.lst.night), 1)))
+co.esite.LST.night <- data.frame(join(co.site_id, co.LST.night.df, by = "Index"))
+
+nm.LST.night.df <- data.frame(seq(1, nrow(nm.points), 1), nm.lst.night)
+names(nm.LST.night.df) <- c("Index", paste0("Tnight_", seq(1, ncol(nm.lst.night), 1)))
+nm.esite.LST.night <- data.frame(join(nm.site_id, nm.LST.night.df, by = "Index"))
+#-----------------------------------------------------------------------------------------------------------
+
+# create LST dif df with site index
+co.LST.dif.df <- data.frame(seq(1, nrow(co.points), 1), co.lst.dif)
+names(co.LST.dif.df) <- c("Index", paste0("Tdif_", seq(1, ncol(co.lst.dif), 1)))
+co.esite.LST.dif <- data.frame(join(co.site_id, co.LST.dif.df, by = "Index"))
+
+co.esite.LST.all <- cbind(co.esite.LST.day, co.LST.night.df[, -1:-2], co.esite.LST.dif[, -1:-2])
+co.esite.LST.day.night <- cbind(co.esite.LST.day, co.LST.night.df[, -1:-2])
+
+nm.LST.dif.df <- data.frame(seq(1, nrow(nm.points), 1), nm.lst.dif)
+names(nm.LST.dif.df) <- c("Index", paste0("Tdif_", seq(1, ncol(nm.lst.dif), 1)))
+nm.esite.LST.dif <- data.frame(join(nm.site_id, nm.LST.dif.df, by = "Index"))
+
+nm.esite.LST.all <- cbind(nm.esite.LST.day, nm.LST.night.df[, -1:-2], nm.esite.LST.dif[, -1:-2])
+nm.esite.LST.day.night <- cbind(nm.esite.LST.day, nm.LST.night.df[, -1:-2])
+#-----------------------------------------------------------------------------------------------------------
+
+# Calculate SATVI
+satvi.co <- (((co.esite.spec.swir1[, -1:-2]) - co.esite.spec.vi.red[, -1:-2])/((co.esite.spec.swir1[,
+    -1:-2]) + co.esite.spec.vi.red[, -1:-2] + 0.5)) * (1 + 0.5) - (co.esite.spec.vi.swir2[, -1:-2]/2)
+co.SATVI.df <- data.frame(seq(1, nrow(co.points), 1), satvi.co)
+names(co.SATVI.df) <- c("Index", paste0("T", seq(1, ncol(satvi.co), 1)))
+co.esite.SATVI <- data.frame(join(co.site_id, co.SATVI.df, by = "Index"))
+
+#co.points.satvi <- extract(CO_SATVI_infill, co.points)
+#head(co.points.satvi)
+#nm.points.terrain <- sfSapply(terrain.nm_list,extract,y=nm.points)
+
+satvi.nm <- (((nm.esite.spec.swir1[, -1:-2]/10000) - nm.esite.spec.vi.red[, -1:-2])/((nm.esite.spec.swir1[,
+    -1:-2]/10000) + nm.esite.spec.vi.red[, -1:-2] + 0.5)) * (1 + 0.5) - (nm.esite.spec.vi.swir2[, -1:-2]/2)
+nm.SATVI.df <- data.frame(seq(1, nrow(nm.points), 1), satvi.nm)
+names(nm.SATVI.df) <- c("Index", paste0("T", seq(1, ncol(satvi), 1)))
+nm.esite.SATVI <- data.frame(join(nm.site_id, nm.SATVI.df, by = "Index"))
+
+
+###############################################################################################################
+save.image("/data/data2/data/esgMapping/R/CO_NM_Ecosite_hyptemp_process.RData")
+load("/data/data2/data/esgMapping/R/CO_NM_Ecosite_hyptemp_process.RData")
+###############################################################################################################
+```
+

@@ -7,13 +7,13 @@ navbar:
     href: index.html
   - text: Code
     menu:
-      - text: "Code Sections"
+      - text: "Modeling Steps"
         href: code.html
-      - text: "Covariate Processing"
+      - text: "1. Covariate Processing"
         href: ESG_Covariate_Processing.html
-      - text: "Hyper-temporal RS-Image Processing"
+      - text: "2. Hyper-temporal RS-Image Processing"
         href: ESG_HyperTemp_Image_Processing.html
-      - text: "MLR Modeling"
+      - text: "3. Modeling, Prediction and Validation"
         href: ESG_MLR_Modeling.html
   - text: Data
     href: data.html
