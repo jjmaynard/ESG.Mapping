@@ -15,6 +15,8 @@ navbar:
         href: ESG_HyperTemp_Image_Processing.html
       - text: "3. Modeling, Prediction and Validation"
         href: ESG_MLR_Modeling.html
+      - text: "4. Mapping SSURGO ESGs"
+        href: ESG_SSURGO_mapping.html
   - text: Data
     href: data.html
   - text: License
