@@ -11,6 +11,10 @@ navbar:
         href: code.html
       - text: "Covariate Processing"
         href: ESG_Covariate_Processing.html
+      - text: "Hyper-temporal RS-Image Processing"
+        href: ESG_HyperTemp_Image_Processing.html
+      - text: "MLR Modeling"
+        href: ESG_MLR_Modeling.html
   - text: Data
     href: data.html
   - text: License
