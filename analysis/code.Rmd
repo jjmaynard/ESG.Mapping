@@ -1,5 +1,5 @@
 ---
-title: "Code"
+title: "Modelling Steps"
 author: "Jonathan Maynard"
 date: "May 28, 2019"
 output: html_document
@@ -9,14 +9,21 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+#### The ecological site modeling framework consists of five steps: 
+    1. Develop an ESG point dataset for training and cross-validation 
+    2. Preprocess ESG covariates for tiling and point overlay
+    3. Covariate feature selection and model development
+    4. Spatial predictions using tiled raster stacks
+    5. Model validation and uncertainty analysis 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+#### Steps 1 and 2 were performed using two R scripts: (1) [**Covariate Processing**](https://jjmaynard.github.io/ESG.Mapping/ESG_Covariate_Processing.html) and (2) [**Hyper-temporal RS-Image Processing**](https://jjmaynard.github.io/ESG.Mapping/ESG_HyperTemp_Image_Processing.html). Steps 3 through 5 were performed using two R scripts: (3) [**Modeling, Prediction and Validation**](https://jjmaynard.github.io/ESG.Mapping/ESG_MLR_Modeling.html) and (4) [**Mapping SSURGO ESGs**](https://jjmaynard.github.io/ESG.Mapping/ESG_SSURGO_mapping.html).
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r fig.width=1, fig.height=5,echo=FALSE}
+library(png)
+library(grid)
+library(here)
+img <- readPNG(here("docs", "ESG_Modeling_Framework.png"))
+ grid.raster(img)
 ```
 
 ## Including Plots
