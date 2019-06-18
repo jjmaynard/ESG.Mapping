@@ -16,22 +16,20 @@ knitr::opts_chunk$set(echo = TRUE)
     4. Spatial predictions using tiled raster stacks
     5. Model validation and uncertainty analysis 
 
-#### Steps 1 and 2 were performed using two R scripts: (1) [**Covariate Processing**](https://jjmaynard.github.io/ESG.Mapping/ESG_Covariate_Processing.html) and (2) [**Hyper-temporal RS-Image Processing**](https://jjmaynard.github.io/ESG.Mapping/ESG_HyperTemp_Image_Processing.html). Steps 3 through 5 were performed using two R scripts: (3) [**Modeling, Prediction and Validation**](https://jjmaynard.github.io/ESG.Mapping/ESG_MLR_Modeling.html) and (4) [**Mapping SSURGO ESGs**](https://jjmaynard.github.io/ESG.Mapping/ESG_SSURGO_mapping.html).
+#### Steps 1 and 2 were performed using two R scripts: 
+  * [**Covariate Processing**](https://jjmaynard.github.io/ESG.Mapping/ESG_Covariate_Processing.html)
+  * [**Hyper-temporal RS-Image Processing**](https://jjmaynard.github.io/ESG.Mapping/ESG_HyperTemp_Image_Processing.html)
 
-```{r fig.width=1, fig.height=5,echo=FALSE}
+#### Steps 3 through 5 were performed using two R scripts: 
+  * [**Modeling, Prediction and Validation**](https://jjmaynard.github.io/ESG.Mapping/ESG_MLR_Modeling.html)
+  * [**Mapping SSURGO ESGs**](https://jjmaynard.github.io/ESG.Mapping/ESG_SSURGO_mapping.html).
+```{r include=FALSE}
 library(png)
 library(grid)
 library(here)
 img <- readPNG(here("docs", "ESG_Modeling_Framework.png"))
- grid.raster(img)
+```
+```{r fig.width=5, fig.height=8,echo=FALSE}
+grid.raster(img)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
