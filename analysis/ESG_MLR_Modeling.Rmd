@@ -67,7 +67,7 @@ plot(NM_raster)
 
 ```
 
-##Plotting of Covariates
+## Plotting of Covariates
 ```{r eval=FALSE}
 cbPalette <- Set3(87)
 NM_TAXOUSDA_plot <- gplot(nm.cov.brick[[269]], maxpixels=800000) +
@@ -81,9 +81,9 @@ ggsave(NM_TAXOUSDA_plot, file = "NM_TAXOUSDA_plot.png", width = 8, height = 8, t
 ```
 
 
-#MODELING
+# MODELING
 
-##Modelling steps
+## Modelling steps
   1. Create preprocess wrapper, wrap in the filter wrappers and tune across models to select filter threshold
   2. Perform hyperparameter tuning with preprocess and filter selection done within CV folds
   3. Assign learning optimal hyperparameters and then run final model using repeated 10-fold cross validation.
@@ -130,7 +130,7 @@ unique(nm.points@data[14:15])
 ```
 
 
-##Define modeling functions
+## Define modeling functions
 ```{r eval=FALSE}
 #-----------------------------------------------------------------------------------------------
 # multi-learner preprocessing function
@@ -427,7 +427,7 @@ classwise_accuracy_stats <- function(model) {
 ```
 
 
-##CO Models
+## Colorado Plateau Models
 ```{r eval=FALSE}
 # register parallel backend
 parallelStartSocket(cpus = 24, show.info = TRUE)
@@ -1120,7 +1120,7 @@ View(CO_dsm_pred_ens.misclass.es3.resp)
 ```
 
 
-##NM Models
+## Chihuahuan Desert Models
 ```{r eval=FALSE}
 # register parallel backend
 parallelStartSocket(cpus = 24, show.info = TRUE)
@@ -1659,9 +1659,8 @@ ggsave("/data/data2/data/esgMapping/analysis/figures/NM_ES7_ESD_misclass.pdf")
 #-------------------------------------------------------------------------------------------
 ```
 
+## Run train models for different datasets
 ```{r eval=FALSE}
-# Run train models for different datasets
-
 # CO models All
 CO_all_train.svm <- mlr::train(CO_all_lrns[[1]], CO_all_var)
 CO_all_train.rf <- mlr::train(CO_all_lrns[[2]], CO_all_var)
@@ -1798,7 +1797,7 @@ NM_dsm_train.xgb.prob <- mlr::train(NM_dsm_lrns.prob[[3]], NM_dsm_var)
 
 ```
 
-##Classifier Calibration
+## Classifier Calibration
 ```{r eval=FALSE}
 # generate calibration data from resampling
 CO_dsm_train.svm.cal = generateCalibrationData(CO_dsm_resample_prob)
@@ -1829,7 +1828,7 @@ ggsave("/data/data2/data/esgMapping/analysis/figures/NM_dsm_classifier calibrati
 
 ```
 
-##Feature Importance
+## Feature Importance
 ```{r eval=FALSE}
 #---------------------------------------------------------------------------------------  
 # Model Agnostic method for feature importance
@@ -2122,7 +2121,7 @@ ggsave("/data/data2/data/esgMapping/analysis/figures/NM_dsm_xgb_variableImp.pdf"
 ```
 
 
-##Partial dependence plots and individual conditional expectation curves
+## Partial dependence plots and individual conditional expectation curves
 ```{r eval=FALSE}
 # Create list of observations that were correctly classified
 NM_dsm.rf.obsError <- data.frame(as.factor(NM_dsm.rf.pred$data$id)) %>% 
@@ -2492,7 +2491,7 @@ plotPartialDependence(CO.dsm.rf.int, facet = "NAMrad_Th")
 
 ```
 
-##Model dependent method for feature importance
+## Model dependent method for feature importance
 ```{r eval=FALSE}
 ############################################################################################################################################
 #-------------------Feature Importance---------------------------------
@@ -2581,7 +2580,7 @@ plotPartialDependence(CO.dsm.rf.int, facet = "NAMrad_Th")
 
 
 
-##Raster predict for CO and NM DSM models
+## Raster predict for CO and NM DSM models
 ```{r eval=FALSE}
 detach("package:caret", unload = TRUE)
 # CO raster predictions
@@ -2926,7 +2925,7 @@ load("/data/data2/data/esgMapping/R/CO_NM_ESG_modeling.RData")
 
 
 
-##ESG class distribution
+## ESG class distribution
 ```{r eval=FALSE}
 # look at ESG class distribution
 co.esite.val.dist <- plyr::count(co.validation.points.covariates[, 2])
@@ -2947,7 +2946,7 @@ axis(2)
 ```
 
 
-##External Cross-validation
+## External Cross-validation
 ```{r eval=FALSE}
 #---------------External Cross-validation
 #----External validation load in external validation points and predict on them

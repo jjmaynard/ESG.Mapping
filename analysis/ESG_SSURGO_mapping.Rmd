@@ -25,7 +25,7 @@ registerDoParallel(cl)
 getDoParWorkers()
 ```
 
-##Load in study boundaries and NASIS points
+## Load in study boundaries and NASIS points
 ```{r eval=FALSE}
 # Study areas
 NM <- readOGR(dsn = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/Chihuahuan_study_area", 
@@ -42,7 +42,7 @@ unique(co.points@data[10:11])
 unique(nm.points@data[14:15])
 ```
 
-##Extract SSURGO spatial data for Chihuahuan Deseart study area using Soil Data Access (SDA)
+## Extract SSURGO spatial data for Chihuahuan Deseart study area using Soil Data Access (SDA)
 ```{r eval=FALSE}
 # Read in MLRA 42 SMU list
 mlra42_esg <- read.csv("/data/data2/mlra42-esg.csv")

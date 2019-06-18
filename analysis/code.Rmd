@@ -16,11 +16,11 @@ knitr::opts_chunk$set(echo = TRUE)
     4. Spatial predictions using tiled raster stacks
     5. Model validation and uncertainty analysis 
 
-#### Steps 1 and 2 were performed using two R scripts: 
+#### Steps 1 and 2 were performed using the following R scripts: 
   * [**Covariate Processing**](https://jjmaynard.github.io/ESG.Mapping/ESG_Covariate_Processing.html)
   * [**Hyper-temporal RS-Image Processing**](https://jjmaynard.github.io/ESG.Mapping/ESG_HyperTemp_Image_Processing.html)
 
-#### Steps 3 through 5 were performed using two R scripts: 
+#### Steps 3 through 5 were performed using the following R scripts: 
   * [**Modeling, Prediction and Validation**](https://jjmaynard.github.io/ESG.Mapping/ESG_MLR_Modeling.html)
   * [**Mapping SSURGO ESGs**](https://jjmaynard.github.io/ESG.Mapping/ESG_SSURGO_mapping.html).
 ```{r include=FALSE}

@@ -29,7 +29,7 @@ getDoParWorkers()
 
 
 ## NASIS ES Point Data
-####Load in NASIS ecological site point data
+#### Load in NASIS ecological site point data
 ```{r eval=FALSE}
 # Study areas
 CO <- readOGR(dsn = "/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area", 

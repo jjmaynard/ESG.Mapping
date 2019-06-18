@@ -452,7 +452,7 @@ div.section {
 
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
-<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span>
 </button>
 </p>
 <div id="workflowr-report" class="collapse">
@@ -461,7 +461,7 @@ div.section {
 <a data-toggle="tab" href="#summary">Summary</a>
 </li>
 <li>
-<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> </a>
 </li>
 <li>
 <a data-toggle="tab" href="#versions">Past versions</a>
@@ -473,7 +473,7 @@ div.section {
 <strong>Last updated:</strong> 2019-06-17
 </p>
 <p>
-<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 5 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
 </p>
 <p>
 <strong>Knit directory:</strong> <code>ESG.Mapping/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
@@ -489,12 +489,12 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges"> <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted changes </a>
 </p>
 </div>
-<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div id="strongRMarkdownfilestronguncommittedchanges" class="panel-collapse collapse">
 <div class="panel-body">
-<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+<p>The R Markdown file has unstaged changes. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
 </div>
 </div>
 </div>
@@ -549,10 +549,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreef778b156e866ef772ce7426b95ed5d834f12d6eatargetblankf778b15a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/f778b156e866ef772ce7426b95ed5d834f12d6ea" target="_blank">f778b15</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreeb76c4f60a023a994c3615479c7ca9eacb8b7b791targetblankb76c4f6a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/b76c4f60a023a994c3615479c7ca9eacb8b7b791" target="_blank">b76c4f6</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreef778b156e866ef772ce7426b95ed5d834f12d6eatargetblankf778b15a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreeb76c4f60a023a994c3615479c7ca9eacb8b7b791targetblankb76c4f6a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -570,6 +570,9 @@ Untracked files:
 
 Unstaged changes:
     Modified:   analysis/ESG_Covariate_Processing.Rmd
+    Modified:   analysis/ESG_MLR_Modeling.Rmd
+    Modified:   analysis/ESG_SSURGO_mapping.Rmd
+    Modified:   analysis/code.Rmd
 
 </code></pre>
 <p>
@@ -608,6 +611,23 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/jjmaynard/ESG.Mapping/09192619e5ea1dcf7c4ec8c5f750f7d8f3d3a25e/docs/ESG_MLR_Modeling.html" target="_blank">0919261</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-06-17
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 html
@@ -753,7 +773,8 @@ r.nm &lt;- raster(ext.nm, ncol = xy.nm[1]/250, nrow = xy.nm[2]/250)
 NM_raster &lt;- rasterize(NM, r.nm)
 res(NM_raster) &lt;- 250
 plot(NM_raster)</code></pre>
-<p>##Plotting of Covariates</p>
+<div id="plotting-of-covariates" class="section level2">
+<h2>Plotting of Covariates</h2>
 <pre class="r"><code>cbPalette &lt;- Set3(87)
 NM_TAXOUSDA_plot &lt;- gplot(nm.cov.brick[[269]], maxpixels=800000) +
   geom_raster(aes(fill = factor(value))) +
@@ -762,8 +783,18 @@ NM_TAXOUSDA_plot &lt;- gplot(nm.cov.brick[[269]], maxpixels=800000) +
 NM_TAXOUSDA_plot
 ggsave(NM_TAXOUSDA_plot, file = &quot;NM_TAXOUSDA_plot.pdf&quot;, width = 8, height = 8)
 ggsave(NM_TAXOUSDA_plot, file = &quot;NM_TAXOUSDA_plot.png&quot;, width = 8, height = 8, type = &quot;cairo-png&quot;)</code></pre>
-<p>#MODELING</p>
-<p>##Modelling steps 1. Create preprocess wrapper, wrap in the filter wrappers and tune across models to select filter threshold 2. Perform hyperparameter tuning with preprocess and filter selection done within CV folds 3. Assign learning optimal hyperparameters and then run final model using repeated 10-fold cross validation. 4. Perform stacked ensemble modeling using selected models. 5. Evaluate models with external validation dataset.</p>
+</div>
+<div id="modeling" class="section level1">
+<h1>MODELING</h1>
+<div id="modelling-steps" class="section level2">
+<h2>Modelling steps</h2>
+<ol style="list-style-type: decimal">
+<li>Create preprocess wrapper, wrap in the filter wrappers and tune across models to select filter threshold</li>
+<li>Perform hyperparameter tuning with preprocess and filter selection done within CV folds</li>
+<li>Assign learning optimal hyperparameters and then run final model using repeated 10-fold cross validation.</li>
+<li>Perform stacked ensemble modeling using selected models.</li>
+<li>Evaluate models with external validation dataset.</li>
+</ol>
 <pre class="r"><code>#-------------------------------------------------------------------------------------------
 # --------register parallel backend
 parallelStartSocket(cpus = 24, show.info = TRUE)
@@ -800,7 +831,9 @@ hyper.control.xgboost = makeHyperControl(mlr.control = makeTuneControlRandom(max
 # lookup key
 unique(co.points@data[10:11])
 unique(nm.points@data[14:15])</code></pre>
-<p>##Define modeling functions</p>
+</div>
+<div id="define-modeling-functions" class="section level2">
+<h2>Define modeling functions</h2>
 <pre class="r"><code>#-----------------------------------------------------------------------------------------------
 # multi-learner preprocessing function
 #-----------------------------------------------------------------------------------------------
@@ -1092,7 +1125,9 @@ classwise_accuracy_stats &lt;- function(model) {
         &quot;Confusion.matrix&quot;, &quot;Cohen.Kappa&quot;, &quot;Purity&quot;)
     return(cv.r)
 }</code></pre>
-<p>##CO Models</p>
+</div>
+<div id="colorado-plateau-models" class="section level2">
+<h2>Colorado Plateau Models</h2>
 <pre class="r"><code># register parallel backend
 parallelStartSocket(cpus = 24, show.info = TRUE)
 
@@ -1780,7 +1815,9 @@ View(CO_dsm_pred_ens.all.es6.resp)
 CO_dsm_pred_ens.misclass.es3.resp &lt;- CO_dsm_pred_ens.misclass %&gt;% filter(truth == 
     &quot;ES6&quot;) %&gt;% group_by(response) %&gt;% summarise(no_rows = length(response))
 View(CO_dsm_pred_ens.misclass.es3.resp)</code></pre>
-<p>##NM Models</p>
+</div>
+<div id="chihuahuan-desert-models" class="section level2">
+<h2>Chihuahuan Desert Models</h2>
 <pre class="r"><code># register parallel backend
 parallelStartSocket(cpus = 24, show.info = TRUE)
 # Create covariate datasets
@@ -2316,9 +2353,10 @@ ggplot(NM_ES7.DF, aes(ESD, ValuePer, fill = ESG)) + geom_bar(stat = &quot;identi
 ggsave(&quot;/data/data2/data/esgMapping/analysis/figures/NM_ES7_ESD_misclass.pdf&quot;)
 
 #-------------------------------------------------------------------------------------------</code></pre>
-<pre class="r"><code># Run train models for different datasets
-
-# CO models All
+</div>
+<div id="run-train-models-for-different-datasets" class="section level2">
+<h2>Run train models for different datasets</h2>
+<pre class="r"><code># CO models All
 CO_all_train.svm &lt;- mlr::train(CO_all_lrns[[1]], CO_all_var)
 CO_all_train.rf &lt;- mlr::train(CO_all_lrns[[2]], CO_all_var)
 CO_all_train.xgb &lt;- mlr::train(CO_all_lrns[[3]], CO_all_var)
@@ -2451,7 +2489,9 @@ NM_dsm_lrns.prob = lapply(NM_dsm_lrns, setPredictType, &quot;prob&quot;)
 NM_dsm_train.svm.prob &lt;- mlr::train(NM_dsm_lrns.prob[[1]], NM_dsm_var)
 NM_dsm_train.rf.prob &lt;- mlr::train(NM_dsm_lrns.prob[[2]], NM_dsm_var)
 NM_dsm_train.xgb.prob &lt;- mlr::train(NM_dsm_lrns.prob[[3]], NM_dsm_var)</code></pre>
-<p>##Classifier Calibration</p>
+</div>
+<div id="classifier-calibration" class="section level2">
+<h2>Classifier Calibration</h2>
 <pre class="r"><code># generate calibration data from resampling
 CO_dsm_train.svm.cal = generateCalibrationData(CO_dsm_resample_prob)
 plotCalibration(CO_dsm_train.svm.cal, smooth = TRUE)
@@ -2478,7 +2518,9 @@ ggsave(&quot;/data/data2/data/esgMapping/analysis/figures/NM_dsm_classifier cali
     width = 6, height = 4, dpi = 200, units = &quot;in&quot;, device = &quot;png&quot;)
 ggsave(&quot;/data/data2/data/esgMapping/analysis/figures/NM_dsm_classifier calibration_ens.pdf&quot;, 
     width = 6, height = 4, dpi = 200, units = &quot;in&quot;)</code></pre>
-<p>##Feature Importance</p>
+</div>
+<div id="feature-importance" class="section level2">
+<h2>Feature Importance</h2>
 <pre class="r"><code>#---------------------------------------------------------------------------------------  
 # Model Agnostic method for feature importance
 
@@ -2765,7 +2807,9 @@ ggsave(&quot;/data/data2/data/esgMapping/analysis/figures/NM_dsm_xgb_variableImp
 #   svm.hyper &lt;- getHyperPars(NM_dsm_lrns[[1]])
 #   svm.model &lt;- svm(esite ~ ., data = nm.esg.dsm.cov.rm, cost = svm.hyper$cost, gamma = svm.hyper$gamma, scale=svm.hyper$ppc.scale, probability=TRUE)
 #   mod.vi &lt;- vip(svm.model, method = &quot;pdp&quot;, feature_names=mod$features)</code></pre>
-<p>##Partial dependence plots and individual conditional expectation curves</p>
+</div>
+<div id="partial-dependence-plots-and-individual-conditional-expectation-curves" class="section level2">
+<h2>Partial dependence plots and individual conditional expectation curves</h2>
 <pre class="r"><code># Create list of observations that were correctly classified
 NM_dsm.rf.obsError &lt;- data.frame(as.factor(NM_dsm.rf.pred$data$id)) %&gt;% 
     set_names(&quot;.id&quot;)
@@ -3131,7 +3175,9 @@ ggsave(&quot;/data/data2/data/esgMapping/analysis/figures/CO_dsm_xgb_pdp.pdf&quo
 CO.dsm.rf.int = generatePartialDependenceData(CO_dsm_train.rf.prob, CO_dsm_var, 
     c(&quot;NAMrad_K&quot;, &quot;NAMrad_Th&quot;), interaction = TRUE)
 plotPartialDependence(CO.dsm.rf.int, facet = &quot;NAMrad_Th&quot;)</code></pre>
-<p>##Model dependent method for feature importance</p>
+</div>
+<div id="model-dependent-method-for-feature-importance" class="section level2">
+<h2>Model dependent method for feature importance</h2>
 <pre class="r"><code>############################################################################################################################################
 #-------------------Feature Importance---------------------------------
 
@@ -3213,7 +3259,9 @@ plotPartialDependence(CO.dsm.rf.int, facet = &quot;NAMrad_Th&quot;)</code></pre>
 #         # xgb.ggplot.importance(importance_matrix = NM_abiotic_xgboost_FI,
 #         #                       top_n = 40,
 #         #                       n_clusters = 1)</code></pre>
-<p>##Raster predict for CO and NM DSM models</p>
+</div>
+<div id="raster-predict-for-co-and-nm-dsm-models" class="section level2">
+<h2>Raster predict for CO and NM DSM models</h2>
 <pre class="r"><code>detach(&quot;package:caret&quot;, unload = TRUE)
 # CO raster predictions
 #---------------------------------------------------------------------------------------
@@ -3551,7 +3599,9 @@ ggsave(NM_ens_dsm_plot, file = &quot;/data/data2/data/esgMapping/analysis/figure
 # save.image(&#39;/data/data2/data/esgMapping/R/CO_NM_ESG_modeling.RData&#39;)
 load(&quot;/data/data2/data/esgMapping/R/CO_NM_ESG_modeling.RData&quot;)
 #---------------------------------------------------------------------------------------</code></pre>
-<p>##ESG class distribution</p>
+</div>
+<div id="esg-class-distribution" class="section level2">
+<h2>ESG class distribution</h2>
 <pre class="r"><code># look at ESG class distribution
 co.esite.val.dist &lt;- plyr::count(co.validation.points.covariates[, 2])
 par(mar = c(10.5, 4, 3.5, 4))
@@ -3566,7 +3616,9 @@ mp &lt;- barplot(nm.esite.val.dist$freq, axes = FALSE, axisnames = FALSE)
 text(mp, par(&quot;usr&quot;)[3], labels = nm.esite.val.dist$x, srt = 45, adj = c(1.1, 
     1.1), xpd = TRUE, cex = 0.9)
 axis(2)</code></pre>
-<p>##External Cross-validation</p>
+</div>
+<div id="external-cross-validation" class="section level2">
+<h2>External Cross-validation</h2>
 <pre class="r"><code>#---------------External Cross-validation
 #----External validation load in external validation points and predict on them
 co.validation.points.covariates
@@ -3699,6 +3751,8 @@ loaded via a namespace (and not attached):
 [13] tools_3.5.2       stringr_1.4.0     glue_1.3.1       
 [16] xfun_0.6          yaml_2.2.0        compiler_3.5.2   
 [19] htmltools_0.3.6   knitr_1.23       </code></pre>
+</div>
+</div>
 </div>
 
 
