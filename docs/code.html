@@ -550,10 +550,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreef778b156e866ef772ce7426b95ed5d834f12d6eatargetblankf778b15a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/f778b156e866ef772ce7426b95ed5d834f12d6ea" target="_blank">f778b15</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree447f0f39c1341baaf5e343b340376da90f9a417ftargetblank447f0f3a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/447f0f39c1341baaf5e343b340376da90f9a417f" target="_blank">447f0f3</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreef778b156e866ef772ce7426b95ed5d834f12d6eatargetblankf778b15a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree447f0f39c1341baaf5e343b340376da90f9a417ftargetblank447f0f3a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -571,6 +571,8 @@ Untracked files:
 
 Unstaged changes:
     Modified:   analysis/ESG_Covariate_Processing.Rmd
+    Modified:   analysis/ESG_MLR_Modeling.Rmd
+    Modified:   analysis/ESG_SSURGO_mapping.Rmd
 
 </code></pre>
 <p>
@@ -609,6 +611,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/jjmaynard/ESG.Mapping/blob/447f0f39c1341baaf5e343b340376da90f9a417f/analysis/code.Rmd" target="_blank">447f0f3</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-06-17
+</td>
+<td>
+Site update
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/jjmaynard/ESG.Mapping/09192619e5ea1dcf7c4ec8c5f750f7d8f3d3a25e/docs/code.html" target="_blank">0919261</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-06-17
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -845,56 +881,20 @@ Update file structure
 4. Spatial predictions using tiled raster stacks
 5. Model validation and uncertainty analysis </code></pre>
 </div>
-<div id="steps-1-and-2-were-performed-using-two-r-scripts-1-covariate-processing-and-2-hyper-temporal-rs-image-processing.-steps-3-through-5-were-performed-using-two-r-scripts-3-modeling-prediction-and-validation-and-4-mapping-ssurgo-esgs." class="section level4">
-<h4>Steps 1 and 2 were performed using two R scripts: (1) <a href="https://jjmaynard.github.io/ESG.Mapping/ESG_Covariate_Processing.html"><strong>Covariate Processing</strong></a> and (2) <a href="https://jjmaynard.github.io/ESG.Mapping/ESG_HyperTemp_Image_Processing.html"><strong>Hyper-temporal RS-Image Processing</strong></a>. Steps 3 through 5 were performed using two R scripts: (3) <a href="https://jjmaynard.github.io/ESG.Mapping/ESG_MLR_Modeling.html"><strong>Modeling, Prediction and Validation</strong></a> and (4) <a href="https://jjmaynard.github.io/ESG.Mapping/ESG_SSURGO_mapping.html"><strong>Mapping SSURGO ESGs</strong></a>.</h4>
-<pre><code>Warning: package &#39;here&#39; was built under R version 3.5.3</code></pre>
-<pre><code>here() starts at R:/ARS_Data/Research_Projects/ESG Mapping/ESG.Mapping</code></pre>
-<pre><code>Warning in readPNG(here(&quot;docs&quot;, &quot;ESG_Modeling_Framework.png&quot;)): libpng
-warning: iCCP: known incorrect sRGB profile</code></pre>
-<p><img src="figure/code.Rmd/unnamed-chunk-1-1.png" width="96" style="display: block; margin: auto;" /></p>
+<div id="steps-1-and-2-were-performed-using-two-r-scripts" class="section level4">
+<h4>Steps 1 and 2 were performed using two R scripts:</h4>
+<ul>
+<li><a href="https://jjmaynard.github.io/ESG.Mapping/ESG_Covariate_Processing.html"><strong>Covariate Processing</strong></a></li>
+<li><a href="https://jjmaynard.github.io/ESG.Mapping/ESG_HyperTemp_Image_Processing.html"><strong>Hyper-temporal RS-Image Processing</strong></a></li>
+</ul>
 </div>
-<div id="including-plots" class="section level2">
-<h2>Including Plots</h2>
-<p>You can also embed plots, for example:</p>
-<p><img src="figure/code.Rmd/pressure-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-pressure-1">
-Past versions of pressure-1.png
-</button>
-</p>
-<div id="fig-pressure-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/jjmaynard/ESG.Mapping/blob/b16b6e3a2fb4ab45b357c70bcd4b9a8afd9ed58b/docs/figure/code.Rmd/pressure-1.png" target="_blank">b16b6e3</a>
-</td>
-<td>
-jjmaynard
-</td>
-<td>
-2019-05-29
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
+<div id="steps-3-through-5-were-performed-using-two-r-scripts" class="section level4">
+<h4>Steps 3 through 5 were performed using two R scripts:</h4>
+<ul>
+<li><a href="https://jjmaynard.github.io/ESG.Mapping/ESG_MLR_Modeling.html"><strong>Modeling, Prediction and Validation</strong></a></li>
+<li><a href="https://jjmaynard.github.io/ESG.Mapping/ESG_SSURGO_mapping.html"><strong>Mapping SSURGO ESGs</strong></a>.</li>
+</ul>
+<p><img src="figure/code.Rmd/unnamed-chunk-2-1.png" width="480" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
