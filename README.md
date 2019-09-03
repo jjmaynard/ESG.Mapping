@@ -7,12 +7,6 @@ This repository contains the data and code for our paper:
 
 > Maynard, J.J., T.W. Nauman, S.W. Salley, B.T. Bestelmeyer, M.C. Duniway, C.J. Talbot, and J.R. Brown, (2019). *Digital Mapping of Ecological Land Units using a Nationally Scalable Modeling Framework*. Soil Science Society of America Journal <https://doi.org/doi:10.2136/sssaj2018.10.0346>
 
-### How to cite
-
-Please cite this compendium as:
-
-> Maynard, J.J., T.W. Nauman, S.W. Salley, B.T. Bestelmeyer, M.C. Duniway, C.J. Talbot, and J.R. Brown, (2019). *Compendium of R code and data for Digital Mapping of Ecological Land Units using a Nationally Scalable Modeling Framework*. Accessed 29 May 2019. Online at <https://doi.org/doi:10.2136/sssaj2018.10.0346>
-
 ### How to download
 
 You can download the compendium as a zip from from this URL: <https://github.com/jjmaynard/ESG.Mapping/archive/master.zip>
