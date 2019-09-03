@@ -28,15 +28,12 @@ Title <- "Digital Mapping of Ecological Land Units using a Nationally Scalable M
 
 
 #### This website describes the data and code used in the paper:
+<br>
 
-> Maynard, J.J., T.W. Nauman, S.W. Salley, B.T. Bestelmeyer, M.C. Duniway, C.J. Talbot, and J.R. Brown, (2019). _`r Title`_. Soil Science Society of America Journal <https://doi.org/doi:10.2136/sssaj2018.10.0346>
+![](cover_small.png)
 
 
-#### How to cite
-
-Please cite this compendium as:
-
->  Maynard, J.J., T.W. Nauman, S.W. Salley, B.T. Bestelmeyer, M.C. Duniway, C.J. Talbot, and J.R. Brown, (`r format(Sys.Date(), "%Y")`). _Compendium of R code and data for `r Title`_. Accessed `r format(Sys.Date(), "%d %b %Y")`. Online at <https://doi.org/doi:10.2136/sssaj2018.10.0346>
+> Maynard, J.J., T.W. Nauman, S.W. Salley, B.T. Bestelmeyer, M.C. Duniway, C.J. Talbot, and J.R. Brown, (2019). _`r Title`_. Soil Science Society of America Journal 83(3):666-686 <https://dl.sciencesocieties.org/publications/sssaj/articles/83/3/666>
 
 
 #### This research compendium describes the spatial modeling framework, R code, and data used to create digital maps of ecological sites in two study areas within the western U.S., representing 6.1 million ha on the Colorado Plateau and 7.5 million ha within the Chihuahuan Desert.
