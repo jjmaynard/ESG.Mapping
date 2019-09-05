@@ -4,27 +4,24 @@ author: "Jonathan Maynard"
 date: "May 28, 2019"
 output: html_document
 ---
+## Spatial Prediction Maps
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+### Spatial prediction maps produced from this study can be downloaded from our Zenodo repository. (Add Link)
+<br>
 
-## R Markdown
+![](Fig5_CO_Pred_maps_rev_color.png)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+###### **Spatial prediction maps of the Colorado Plateau study area for, (a) support vector machine, (b) random forest, (c) extreme gradient boosting,and (d) an ensemble of all models using the digital soil mapping (DSM) dataset**
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+<br>
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
+<br>
 
-You can also embed plots, for example:
+![](Fig6_NM_Pred_maps_rev_color.png)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+###### **Spatial prediction maps of the Chihuahuan Desert study area for, (a) support vector machine, (b) random forest, (c) extreme gradient boosting, and (d) an ensemble of all models using the digital soil mapping (DSM) dataset**
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+<br>
+
+
