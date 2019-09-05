@@ -470,7 +470,7 @@ div.section {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2019-06-17
+<strong>Last updated:</strong> 2019-09-05
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -549,10 +549,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree0e084ee921fd3e32c5ac50384bbdd2f72b39c2f1targetblank0e084eea"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/0e084ee921fd3e32c5ac50384bbdd2f72b39c2f1" target="_blank">0e084ee</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreefd35aa0bd1ecae923e5ff5de3adf28e1f1b407datargetblankfd35aa0a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/jjmaynard/ESG.Mapping/tree/fd35aa0bd1ecae923e5ff5de3adf28e1f1b407da" target="_blank">fd35aa0</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtree0e084ee921fd3e32c5ac50384bbdd2f72b39c2f1targetblank0e084eea" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomjjmaynardESGMappingtreefd35aa0bd1ecae923e5ff5de3adf28e1f1b407datargetblankfd35aa0a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -567,6 +567,9 @@ Ignored files:
 
 Untracked files:
     Untracked:  data/derived_data/vector/
+
+Unstaged changes:
+    Modified:   analysis/data.Rmd
 
 </code></pre>
 <p>
@@ -605,6 +608,23 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/jjmaynard/ESG.Mapping/e48cb8a2738f0585af94ffca14ab04fa67fbe3d0/docs/ESG_Covariate_Processing.html" target="_blank">e48cb8a</a>
+</td>
+<td>
+jjmaynard
+</td>
+<td>
+2019-06-17
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -891,7 +911,8 @@ getDoParWorkers()</code></pre>
 </div>
 <div id="nasis-es-point-data" class="section level2">
 <h2>NASIS ES Point Data</h2>
-<p>####Load in NASIS ecological site point data</p>
+<div id="load-in-nasis-ecological-site-point-data" class="section level4">
+<h4>Load in NASIS ecological site point data</h4>
 <pre class="r"><code># Study areas
 CO &lt;- readOGR(dsn = &quot;/data/data1/R_DATA/Imagery_Vector/Ecosite_Group_Mapping/CO_Plat_study_area&quot;, 
     layer = &quot;epaL4_mlra35sel_bndc&quot;)
@@ -983,6 +1004,7 @@ names(co.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
 nm.site_id &lt;- data.frame(seq(1, nrow(nm.points), 1), nm.points$ESG_ID)
 names(nm.site_id) &lt;- c(&quot;Index&quot;, &quot;esite&quot;)
 #-------------------------------------------------------------------------------------------------</code></pre>
+</div>
 </div>
 <div id="process-covariate-data" class="section level2">
 <h2>Process Covariate Data</h2>
@@ -2199,7 +2221,7 @@ load(&quot;/data/data2/data/esgMapping/R/CO_NM_Ecosite_covariate_process.RData&q
 </p>
 <div id="workflowr-sessioninfo" class="collapse">
 <pre class="r"><code>sessionInfo()</code></pre>
-<pre><code>R version 3.5.2 (2018-12-20)
+<pre><code>R version 3.5.3 (2019-03-11)
 Platform: x86_64-w64-mingw32/x64 (64-bit)
 Running under: Windows 7 x64 (build 7601) Service Pack 1
 
@@ -2220,8 +2242,8 @@ loaded via a namespace (and not attached):
  [4] rprojroot_1.3-2   backports_1.1.4   git2r_0.25.2.9000
  [7] magrittr_1.5      evaluate_0.13     stringi_1.4.3    
 [10] fs_1.2.7          whisker_0.3-2     rmarkdown_1.12   
-[13] tools_3.5.2       stringr_1.4.0     glue_1.3.1       
-[16] xfun_0.6          yaml_2.2.0        compiler_3.5.2   
+[13] tools_3.5.3       stringr_1.4.0     glue_1.3.1       
+[16] xfun_0.6          yaml_2.2.0        compiler_3.5.3   
 [19] htmltools_0.3.6   knitr_1.23       </code></pre>
 </div>
 </div>
